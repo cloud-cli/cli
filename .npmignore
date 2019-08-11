@@ -1,0 +1,4 @@
+server/
+images/
+.prettierrc
+tsconfig.json

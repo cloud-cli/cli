@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./",
+    "module": "ESNext",
+    "target": "ESNext",
+    "moduleResolution": "Node",
+    "typeRoots": ["./", "./node_modules/@types"],
+    "types": ["node"],
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "strict": true,
+    "experimentalDecorators": true,
+    "outDir": "./build/"
+  },
+  "includes": ["./server/**/*.ts"],
+  "exclude": ["node_modules/**"]
+}
