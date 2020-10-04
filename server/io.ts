@@ -56,12 +56,12 @@ export function join(...args: string[]) {
   return getFullPath(...args);
 }
 
-export async function readDirectory(...args: string[]) {
+export function readDirectory(...args: string[]) {
   const path = getFullPath(...args);
   logger.debug('readdir', path);
 
   try {
-    return await asyncFS.readdir(path);
+    return FS.readdirSync(path);
   } catch {
     return [];
   }

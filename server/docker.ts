@@ -19,8 +19,8 @@ interface DockerRawStatus {
     Paused: boolean;
   };
   Mounts: {
-    Source: '/home/cloudy/data/7891687e56510ac3948ba7599f71e88974cc95d249f67a45d3bdeea162c1717c';
-    Destination: '/opt/data';
+    Source: string;
+    Destination: string;
     RW: boolean;
   }[];
   NetworkSettings: {
@@ -144,15 +144,16 @@ class DockerImage {
   }
 }
 
-export class DockerService {
+class DockerService {
   private baseImages: string[] = [];
+  private imagesBaseFolder = join('node_modules', '@cloud-cli');
 
-  constructor(private imagesFolder: string) {
+  constructor() {
     this.loadImages();
   }
 
-  private async loadImages() {
-    this.baseImages = await readDirectory(this.imagesFolder);
+  private loadImages() {
+    this.baseImages = readDirectory(this.imagesBaseFolder).filter((folder) => folder.startsWith('image-'));
   }
 
   getRunningContainers() {
@@ -176,7 +177,7 @@ export class DockerService {
 
   getBaseImage(imageName: string) {
     if (this.hasBaseImage(imageName)) {
-      return new DockerImage(join(this.imagesFolder, imageName));
+      return new DockerImage(join(this.imagesBaseFolder, imageName));
     }
 
     return null;
@@ -241,3 +242,5 @@ export class DockerService {
     });
   }
 }
+
+export const Docker = new DockerService();

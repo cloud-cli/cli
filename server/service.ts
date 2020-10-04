@@ -4,14 +4,12 @@ import { FileStorage } from './storage.js';
 import { Log } from './log.js';
 import { Nginx } from './nginx.js';
 import { ServiceConfiguration, PublicServiceConfiguration, Service } from './models.js';
-import { DockerService, PortSpecification } from './docker.js';
+import { Docker, PortSpecification } from './docker.js';
 import { join } from './io.js';
 
 const logger = Log.create('services');
 const sha256 = (value: import('crypto').BinaryLike) => createHash('sha256').update(value).digest('hex');
 const containerDataDirectory = '/opt/data';
-
-const Docker = new DockerService('images');
 
 interface StoredService {
   type: string;

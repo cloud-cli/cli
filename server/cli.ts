@@ -12,7 +12,7 @@ function printHelp() {
 
     ## Server management commands:
       cy serve                        Start HTTP server (default port is 9999)
-      cy ls
+      cy ls                           List all services
       cy build-all                    Rebuild all services and re-run containers
       cy restart-all                  Redeploy all containers
 
@@ -35,129 +35,141 @@ function printHelp() {
       cy stop                         Stop container of a running service
       cy restart                      Stop and start again a service container
 
+    ## Container commands
+      cy images                       List available images
+
   `);
 }
 
-export async function cli(args: string[]) {
-  const command = args.shift();
-  const [repository, branch] = args;
-  const service: Service = { repository, branch: branch || 'master' };
-
-  let services;
-
-  switch (command) {
-    case 'create':
-      await Services.create(service);
-      Server.reload();
-      break;
-
-    case 'build':
-      const configuration = await GitHub.fetchServiceConfiguration(service);
-      await Services.create(service, configuration);
-      await Services.build(service, configuration);
-      await Services.runInBackground(service, configuration);
-      Server.reload();
-      break;
-
-    case 'run':
-      await Services.runAndExit(service);
-      break;
-
-    case 'destroy':
-      await Services.destroy(service);
-      Server.reload();
-      break;
-
-    case 'create-key':
-      const repositoryExists = await GitHub.exists(repository);
-      if (!repositoryExists) {
-        throw new Error('Repository not found');
-      }
-
-      const key = await KeyManager.createServiceKey(service);
-      Server.reload();
-      return key;
-
-    case 'get-key':
-      return await KeyManager.getServiceKey(service);
-
-    case 'delete-key':
-      await KeyManager.deleteServiceKey(service);
-      break;
-
-    case 'stop':
-      await Services.stop(service);
-      break;
-
-    case 'start':
-      await Services.runInBackground(service);
-      break;
-
-    case 'restart':
-      await Services.stop(service);
-      await Services.runInBackground(service);
-      break;
-
-    case 'restart-all':
-      for (const service of Services.getStatus()) {
-        await Services.stop(service);
-        await Services.runInBackground(service);
-      }
-      Server.reload();
-      break;
-
-    case 'build-all':
-      for (const service of Services.getStatus()) {
-        await Services.build(service);
-        await Services.runInBackground(service);
-      }
-      Server.reload();
-      break;
-
-    case 'ls':
-      services = Services.getStatus().map((service) => ({
-        id: service.id,
-        name: service.name,
-        type: service.type,
-        online: `${service.online ? '  -  ' : '[ ! ]'}`,
-        origin: (service.repository + ' ' + ((service.branch !== 'master' && service.branch) || '')).trim(),
-        key: KeyManager.getServiceKey(service),
-      }));
-
-      const field = args[0];
-
-      if (field) {
-        return services.map((service: any) => service[field]).join('\n');
-      }
-
-      const headers = ['---', 'Id', 'Container', 'Type', 'Origin', 'Key'];
-
-      return formatList(
-        [headers, Array(headers.length).fill('')].concat(
-          services.map((_) => [_.online, _.id, _.name, _.type, _.origin, _.key]),
-        ),
-      );
-
-    case 'status':
-      return JSON.stringify(Services.getStatusOf(service), null, 2);
-
-    case 'help':
-      printHelp();
-      break;
-
-    case 'init':
-      Server.createProject();
-      break;
-
-    case 'serve':
-      api().catch(console.log);
-      break;
-
-    default:
-      throw new Error('Invalid command!');
+class CloudyCommands {
+  async create(service: Service) {
+    await Services.create(service);
+    Server.reload();
   }
 
-  return '';
+  async build(service: Service) {
+    const configuration = await GitHub.fetchServiceConfiguration(service);
+    await Services.create(service, configuration);
+    await Services.build(service, configuration);
+    await Services.runInBackground(service, configuration);
+    Server.reload();
+  }
+
+  async run(service: Service) {
+    await Services.runAndExit(service);
+  }
+
+  async destroy(service: Service) {
+    await Services.destroy(service);
+    Server.reload();
+  }
+
+  async createKey(service: Service) {
+    const { repository } = service;
+    const repositoryExists = await GitHub.exists(repository);
+    if (!repositoryExists) {
+      throw new Error('Repository not found');
+    }
+
+    const key = await KeyManager.createServiceKey(service);
+    Server.reload();
+
+    return key;
+  }
+
+  getKey(service: Service) {
+    return KeyManager.getServiceKey(service);
+  }
+
+  deleteKey(service: Service) {
+    return KeyManager.deleteServiceKey(service);
+  }
+
+  stop(service: Service) {
+    Services.stop(service);
+  }
+
+  start(service: Service) {
+    Services.runInBackground(service);
+  }
+
+  restart(service: Service) {
+    this.stop(service);
+    this.start(service);
+  }
+
+  async restartAll() {
+    for (const service of Services.getStatus()) {
+      await Services.stop(service);
+      await Services.runInBackground(service);
+    }
+
+    Server.reload();
+  }
+
+  async buildAll() {
+    for (const service of Services.getStatus()) {
+      await Services.build(service);
+      await Services.runInBackground(service);
+    }
+
+    Server.reload();
+  }
+
+  ls(_: Service, args: string[]) {
+    const services = Services.getStatus().map((service) => ({
+      id: service.id,
+      name: service.name,
+      type: service.type,
+      online: `${service.online ? '  -  ' : '[ ! ]'}`,
+      origin: (service.repository + ' ' + ((service.branch !== 'master' && service.branch) || '')).trim(),
+      key: KeyManager.getServiceKey(service),
+    }));
+
+    const field = args[0];
+
+    if (field) {
+      return services.map((service: any) => service[field]).join('\n');
+    }
+
+    const headers = ['---', 'Id', 'Container', 'Type', 'Origin', 'Key'];
+
+    return formatList(
+      [headers, Array(headers.length).fill('')].concat(
+        services.map((_) => [_.online, _.id, _.name, _.type, _.origin, _.key]),
+      ),
+    );
+  }
+
+  status(service: Service) {
+    return JSON.stringify(Services.getStatusOf(service), null, 2);
+  }
+
+  help() {
+    printHelp();
+  }
+
+  init() {
+    Server.createProject();
+  }
+
+  serve() {
+    return api();
+  }
+}
+
+export async function cli(args: string[]) {
+  const command = String(args.shift());
+  const [repository, branch] = args;
+  const service: Service = { repository, branch: branch || 'master' };
+  const commandAsMethod = command.replace(/-([a-z]{1})/g, (_, letter) => letter.toUpperCase()) as keyof CloudyCommands;
+  const cloudy = new CloudyCommands();
+
+  if (commandAsMethod in cloudy) {
+    return cloudy[commandAsMethod](service, args);
+  }
+
+  throw new Error('Invalid command!');
 }
 
 function formatList(rows: any[]) {
@@ -173,5 +185,6 @@ function formatList(rows: any[]) {
   const formattedList = rows.map((row) =>
     row.map((column: any, index: number) => rightPad(String(column), sizes[index])).join(' | '),
   );
+
   return formattedList.join('\n');
 }

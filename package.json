@@ -1,7 +1,7 @@
 {
   "name": "@cloud-cli/cloudy",
   "version": "1.0.0",
-  "description": "A tiny REST API to deploy micro services from GitHub repositories to Docker containers",
+  "description": "REST API and CLI to deploy micro services from GitHub repositories with Docker containers",
   "main": "index.js",
   "type": "module",
   "bin": {
