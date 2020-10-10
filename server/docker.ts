@@ -146,14 +146,14 @@ class DockerImage {
 
 class DockerService {
   private baseImages: string[] = [];
-  private imagesBaseFolder = join('node_modules', '@cloud-cli');
+  private imagesBaseFolder = 'node_modules/@cloud-cli';
 
   constructor() {
     this.loadImages();
   }
 
   private loadImages() {
-    this.baseImages = readDirectory(this.imagesBaseFolder).filter((folder) => folder.startsWith('image-'));
+    this.baseImages = readDirectory(this.imagesBaseFolder); //.filter((folder) => folder.startsWith('image-'));
   }
 
   getRunningContainers() {
@@ -165,6 +165,10 @@ class DockerService {
       .trim()
       .split('\n')
       .filter((s) => s !== '<none>');
+  }
+
+  getBaseImageNames() {
+    return this.baseImages;
   }
 
   hasBaseImage(imageName: string) {

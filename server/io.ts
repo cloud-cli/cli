@@ -56,12 +56,20 @@ export function join(...args: string[]) {
   return getFullPath(...args);
 }
 
-export function readDirectory(...args: string[]) {
+export function readDirectory(...args: string[]): string[] {
   const path = getFullPath(...args);
   logger.debug('readdir', path);
 
   try {
-    return FS.readdirSync(path);
+    const directory = FS.opendirSync(path, { encoding: 'utf8' });
+    const entries = [];
+    let entry;
+
+    while ((entry = directory.readSync())) {
+      entries.push(entry.name);
+    }
+
+    return entries;
   } catch {
     return [];
   }

@@ -1,12 +1,33 @@
 # Cloudy
 
-Cloudy is **a tiny REST API to deploy micro services** from GitHub repositories. It has **no dependencies**.
+Cloudy is **a tiny REST API to automate the deploy of micro services from GitHub repositories**.
 
 It works by receiving GitHub WebHook calls, cloning the source code and running it inside a Docker container.
 
-> SEE ALSO:
->
-> The companion node service [that builds the base cloud containers](https://github.com/homebots/cloudy-images) from a git repository.
+## Getting Started
+
+You need a machine with these installed:
+
+- [Docker](https://www.docker.com/)
+- [Nginx](https://www.nginx.com/)
+- [Node.js](https://nodejs.org/)
+
+Then you can install the Cloudy CLI and create a deploy server:
+
+```bash
+# install Cloudy CLI
+npm i -g @cloud-cli/cloudy
+
+# add support for nodejs apps
+cy install nodejs
+
+# start a new project
+mkdir cloud-server
+cd cloud-server
+cy init
+
+cy serve
+```
 
 ## How it works
 
@@ -16,25 +37,12 @@ The service will then clone the source repository and deploy it to a Docker cont
 
 Then a Nginx configuration will be generated for that service under `/nginx`.
 
-## How to run the Cloudy server
-
-Start a new project:
-
-```bash
-mkdir cloud-server
-cd cloud-server
-cy init
-```
-
 Define the domain where the Cloudy service will run:
 
 ```
 exports CLOUDY_DOMAIN='your-domain.com'
 exports PORT=9999
 ```
-
-Then just run `index.js` on a host machine with Docker. Use [`pm2`](https://www.npmjs.com/package/pm2) to allow the service to restart when updates are available.
-E.g. `pm2 start --name cloudy npm start`
 
 ## Service configurations
 

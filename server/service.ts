@@ -157,6 +157,7 @@ class ServiceManager {
 
       const onTerminate = () => {
         childProcess.terminate();
+        Docker.deleteImage(imageName);
         process.exit(0);
       };
 
@@ -183,6 +184,20 @@ class ServiceManager {
   stop(service: Service) {
     logger.debug('stop', service);
     Docker.stopContainer(this.getContainerNameForService(service));
+  }
+
+  getBaseImages() {
+    return Docker.getBaseImageNames().map((name) => 'cloudy/' + name);
+  }
+
+  buildAllBaseImages() {
+    Docker.getBaseImageNames().forEach((imageName) => {
+      const image = Docker.getBaseImage(imageName);
+
+      if (image) {
+        image.build({ imageName: 'cloudy/' + imageName });
+      }
+    });
   }
 
   private async resolveConfiguration(service: Service, configuration?: PublicServiceConfiguration) {

@@ -39,7 +39,7 @@ class ServerManager {
       CLOUDY_DOMAIN: '',
     };
 
-    const randomKey = randomBytes(64).toString('hex');
+    const randomKey = randomBytes(128).toString('hex');
 
     writeFile('.cloudyrc', JSON.stringify(environment, null, 2));
     writeFile('.key', randomKey);

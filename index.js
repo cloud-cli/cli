@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 import { cli } from './build/cli.js';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';

@@ -4,6 +4,7 @@ import { Service } from './models.js';
 import { GitHub } from './github.js';
 import { KeyManager } from './keys.js';
 import { api } from './api.js';
+import { Shell } from './shell.js';
 
 function printHelp() {
   console.log(`
@@ -36,7 +37,9 @@ function printHelp() {
       cy restart                      Stop and start again a service container
 
     ## Container commands
-      cy images                       List available images
+      cy images                       List installed images
+      cy build-images                 Build all base images
+      cy install <image>              Installs a base image. See images at https://www.npmjs.com/search?q=%40cloud-cli
 
   `);
 }
@@ -145,12 +148,25 @@ class CloudyCommands {
     return JSON.stringify(Services.getStatusOf(service), null, 2);
   }
 
+  images() {
+    return Services.getBaseImages().join('\n');
+  }
+
+  buildImages() {
+    return Services.buildAllBaseImages();
+  }
+
   help() {
     printHelp();
   }
 
   init() {
     Server.createProject();
+  }
+
+  install(_: Service, args: string[]) {
+    const [imageName] = args;
+    Shell.execSync('npm', ['install', '@cloud-cli/image-' + imageName]);
   }
 
   serve() {
