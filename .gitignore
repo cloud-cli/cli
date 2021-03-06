@@ -1,8 +1,2 @@
-node_modules
-.key
-.rebuild-lock
-nginx/*
-data/*
-storage/*
-logs/*
-build
+node_modules/
+dist/

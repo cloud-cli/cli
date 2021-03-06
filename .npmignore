@@ -1,4 +1,7 @@
-server/
-images/
-.prettierrc
+.nyc_output
+coverage
+dist/*.spec.*
+src/
+jasmine.json
+.github
 tsconfig.json

@@ -1,19 +1,15 @@
 {
   "compilerOptions": {
-    "baseUrl": "./",
-    "module": "ESNext",
-    "target": "ESNext",
-    "moduleResolution": "Node",
-    "typeRoots": ["./", "./node_modules/@types"],
-    "types": ["node"],
-    "noImplicitAny": true,
+    "moduleResolution": "node",
+    "target": "esnext",
+    "lib": ["ESNext"],
+    "esModuleInterop": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noImplicitReturns": true,
-    "strict": true,
-    "experimentalDecorators": true,
-    "outDir": "./build/"
+    "typeRoots": ["./node_modules/@types"],
+    "types": ["jasmine", "node"],
+    "outDir": "./dist",
+    "declaration": true
   },
-  "includes": ["./server/**/*.ts"],
-  "exclude": ["node_modules/**"]
+  "include": ["./src/**/*.ts"]
 }
