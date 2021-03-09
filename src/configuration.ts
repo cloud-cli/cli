@@ -4,38 +4,22 @@ import { Logger } from './logger.js';
 
 const noop = () => {};
 
-export function importRcFile() {
-  const rcFile = join(process.cwd(), '.cloudyrc');
-
-  if (!existsSync(rcFile)) {
-    return;
-  }
-
-  try {
-    const env = readAndParse(rcFile);
-    Object.assign(process.env, env);
-  } catch (error) {
-    Logger.log(error.message);
-  }
-}
-
-export function readModuleConfiguration(moduleName: string, key: string): object {
+export function readModuleConfiguration(moduleName: string): ModuleConfiguration {
   const filePath = join(process.cwd(), 'configuration', `${moduleName}.json`);
 
   if (!existsSync(filePath)) {
-    return {};
+    throw new Error(`Missing configuration file for ${moduleName}`);
   }
 
   try {
-    const config = readAndParse(filePath);
-    return config[key] || {};
+    return readAndParse(filePath) as ModuleConfiguration;
   } catch (error) {
     Logger.log(`Invalid configuration file for ${moduleName}: ${error.message}`);
-    return {};
+    throw error;
   }
 }
 
-export async function loadDeclarationFile() {
+export async function loadCloudConfigurationFile() {
   const filePath = join(process.cwd(), 'cloudy.conf.js');
 
   if (!existsSync(filePath)) {
@@ -54,4 +38,15 @@ export async function loadDeclarationFile() {
 
 function readAndParse(filePath: string): object {
   return JSON.parse(String(readFileSync(filePath)));
+}
+
+export interface CloudConfiguration {
+  [module: string]: ModuleConfiguration;
+}
+
+export interface ModuleConfiguration {
+  port: number;
+  commands?: {
+    [command: string]: object;
+  };
 }

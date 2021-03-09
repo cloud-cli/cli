@@ -1,12 +1,12 @@
 import yargs from 'yargs';
-import { importRcFile, loadDeclarationFile, readModuleConfiguration } from './configuration.js';
+import { CloudConfiguration, loadCloudConfigurationFile, readModuleConfiguration } from './configuration.js';
 import { Logger } from './logger.js';
 
 type CallableCommands = Record<string, Function>;
 
 export class Cloudy {
   private commands = new Map<string, CallableCommands>();
-  private serve: () => void;
+  private declarationModuleMain: (configuration: CloudConfiguration) => void;
 
   add(name: string, value: CallableCommands) {
     this.commands.set(name, value);
@@ -14,18 +14,25 @@ export class Cloudy {
   }
 
   async run(args: string[]) {
-    this.serve = await loadDeclarationFile();
+    this.declarationModuleMain = await loadCloudConfigurationFile();
 
-    if (args.includes('--help') || args.length === 0) {
+    if (!args.length || args[0] === '--help') {
       this.showHelpAndExit();
     }
 
     if (args[0] == '--serve') {
-      Logger.log(`Starting services...`);
-      return this.serve();
+      return this.startServices();
     }
 
     this.runCommandFromArgs(args);
+  }
+
+  private startServices() {
+    Logger.log('Starting services...');
+    const configuration: CloudConfiguration = {};
+
+    this.commands.forEach((_, name) => (configuration[name] = readModuleConfiguration(name)));
+    this.declarationModuleMain(configuration);
   }
 
   async runCommandFromArgs(args: string[]) {
@@ -37,16 +44,15 @@ export class Cloudy {
       this.showHelpAndExit();
     }
 
-    importRcFile();
-
-    const optionsFromCli = this.readParams(params);
-    const optionFromFile = readModuleConfiguration(command, functionName);
+    const moduleConfig = readModuleConfiguration(command);
+    const optionsFromCli = this.parseParamsFromCli(params);
+    const optionFromFile = (moduleConfig.commands && moduleConfig.commands[functionName]) || {};
     const mergedOptions = Object.assign({}, optionsFromCli, optionFromFile);
 
-    Logger.log(`${command}.${functionName}`, mergedOptions);
-
     try {
-      target[functionName](mergedOptions);
+      const output = await target[functionName](mergedOptions);
+      this.printOutput(output);
+
       process.exit(0);
     } catch (error) {
       Logger.log(error.message);
@@ -54,7 +60,17 @@ export class Cloudy {
     }
   }
 
-  private readParams(input: string[]) {
+  private printOutput(output: any) {
+    if (output === undefined) return;
+
+    if (typeof output === 'object' && output) {
+      output = JSON.stringify(output);
+    }
+
+    Logger.log(output);
+  }
+
+  private parseParamsFromCli(input: string[]) {
     const { argv } = yargs(input);
     const { _, $0, ...params } = argv;
 
