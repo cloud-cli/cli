@@ -1,7 +1,5 @@
-#!/usr/bin/env node
+import { CommandLineInterface } from './cli.js';
 
-import { Cloudy } from './cloudy.js';
-
-export const cy = new Cloudy();
+const cli = new CommandLineInterface();
 const args = process.argv.slice(2);
-cy.run(args);
+cli.run(args);

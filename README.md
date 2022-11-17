@@ -1,15 +1,12 @@
 # Cloudy
 
-Cloudy is **a tiny REST API to automate the deploy of micro services from GitHub repositories**.
-
-It works by receiving GitHub WebHook calls, cloning the source code and running it inside a Docker container.
+Cloudy is **a tiny REST API to automate the deploy of micro services**.
 
 ## Getting Started
 
 You need a machine with these installed:
 
 - [Docker](https://www.docker.com/)
-- [Nginx](https://www.nginx.com/)
 - [Node.js](https://nodejs.org/)
 
 Then you can install the Cloudy CLI and create a deploy server:
@@ -17,9 +14,6 @@ Then you can install the Cloudy CLI and create a deploy server:
 ```bash
 # install Cloudy CLI
 npm i -g @cloud-cli/cloudy
-
-# add support for nodejs apps
-cy install nodejs
 
 # start a new project
 mkdir cloud-server

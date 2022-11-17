@@ -1,14 +1,12 @@
 {
   "compilerOptions": {
-    "module": "esnext",
+    "module": "ES2020",
     "moduleResolution": "node",
-    "target": "esnext",
-    "lib": ["ESNext"],
-    "esModuleInterop": true,
+    "target": "es2015",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "esModuleInterop": true,
     "typeRoots": ["./node_modules/@types"],
-    "types": ["jasmine", "node"],
     "outDir": "./dist",
     "declaration": true
   },
