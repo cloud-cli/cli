@@ -2,6 +2,8 @@
 coverage
 dist/*.spec.*
 src/
+test/
 jasmine.json
 .github
 tsconfig.json
+jest.config.ts

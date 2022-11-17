@@ -8,7 +8,6 @@ export class Configuration {
 
     if (!existsSync(filePath)) {
       return {};
-      // throw new Error(`Missing configuration file for ${moduleName}`);
     }
 
     try {
