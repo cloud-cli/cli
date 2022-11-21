@@ -1,4 +1,6 @@
+import bodyParser from 'body-parser';
 import { existsSync, readFileSync } from 'fs';
+import { createServer } from 'http';
 import { join } from 'path';
 import yargs from 'yargs';
 import { Configuration } from './configuration.js';
@@ -10,16 +12,20 @@ export class CommandLineInterface {
   private commands = new Map<string, CallableCommands>();
   protected configuration = new Configuration();
 
-  protected async loadCloudConfiguration(): Promise<Array<[string, CallableCommands]>> {
+  protected async loadCloudConfiguration(): Promise<void> {
     const filePath = join(process.cwd(), 'cloudy.conf.mjs');
 
     if (!existsSync(filePath)) {
       Logger.log(`Configuration file at ${filePath} not found`);
-      return [];
+      return;
     }
 
     try {
-      return (await import(filePath)).default;
+      const tools = (await import(filePath)).default as Array<[string, CallableCommands]>;
+
+      Array.from(tools).forEach(([name, commands]) => {
+        this.commands.set(name, commands);
+      });
     } catch (error) {
       Logger.log(`Invalid cloud configuration file: ${filePath}`);
       Logger.log(error.message);
@@ -27,12 +33,8 @@ export class CommandLineInterface {
     }
   }
 
-  async run(args: string[]) {
-    const tools = await this.loadCloudConfiguration();
-
-    Array.from(tools).forEach(([name, commands]) => {
-      this.commands.set(name, commands);
-    });
+  async runWithArgs(args: string[]) {
+    await this.loadCloudConfiguration();
 
     if (!args.length || args[0] === '--help') {
       this.showHelpAndExit();
@@ -45,21 +47,68 @@ export class CommandLineInterface {
     this.runCommandFromArgs(args);
   }
 
-  private startServices() {
+  private async startServices() {
     Logger.log('Starting services...');
+    const server = createServer((request, response) => this.runCommandFromRequest(request, response));
+    server.listen(Number(process.env.API_PORT || 80));
+  }
 
-    this.commands.forEach((command, name) => {
-      const configuration = this.configuration.loadModuleConfiguration(name);
+  async runCommandFromRequest(request, response) {
+    if (request.method !== 'POST' && request.method !== 'GET') {
+      response.writeHead(405, 'Invalid request');
+      response.end();
+      return;
+    }
 
-      if (command.start) {
-        command.start(configuration);
-      }
-    });
+    const [command, functionName] = request.url.slice(1).split('.');
+    const target = this.commands.get(command);
+    if (!target || !command || !functionName || request.method !== 'POST') {
+      response.writeHead(400, 'Bad command, function or options');
+      const help = {};
+      this.commands.forEach((object, command) => {
+        help[command] = [];
+
+        const properties = Object.getOwnPropertyNames(object);
+        properties.forEach((name) => {
+          if (name !== 'constructor' && typeof object[name] === 'function') {
+            help[command].push(name);
+          }
+        });
+      });
+      response.write(JSON.stringify(help, null, 2));
+      response.end();
+      return;
+    }
+
+    const { next, promise } = this.createNext();
+    bodyParser.json()(request, response, next);
+    await promise;
+
+    try {
+      const output = await this.runCommand(command, functionName, request.body);
+      response.writeHead(200, 'OK');
+      response.write(JSON.stringify(output, null, 2));
+      response.end();
+    } catch (error) {
+      response.writeHead(500, 'Oops');
+      response.write(error.message);
+      response.end();
+    }
+  }
+
+  private createNext() {
+    const out: any = {};
+    out.promise = new Promise((resolve) => (out.resolve = resolve));
+
+    const next = () => out.resolve();
+    return { next, promise: out.promise };
   }
 
   async runCommandFromArgs(args: string[]) {
-    const [command, functionName, ...params] = args;
+    const [c, ...params] = args;
+    const [command, functionName] = c.split('.');
     const target = this.commands.get(command);
+    const optionsFromCli = this.parseParamsFromCli(params);
 
     if (!target || !functionName || !target[functionName]) {
       Logger.log(`Invalid command: ${command} ${functionName || ''}`);
@@ -67,20 +116,24 @@ export class CommandLineInterface {
     }
 
     try {
-      const moduleConfig = this.configuration.loadModuleConfiguration(command);
-      const optionsFromCli = this.parseParamsFromCli(params);
-      const optionFromFile = (moduleConfig.commands && moduleConfig.commands[functionName]) || {};
-      const mergedOptions = Object.assign({}, optionsFromCli, optionFromFile);
-
-      Logger.debug(`Running command: ${command} ${functionName}`, mergedOptions);
-      const output = await target[functionName](mergedOptions);
+      const output = await this.runCommand(command, functionName, optionsFromCli);
       this.printOutput(output);
-
       process.exit(0);
     } catch (error) {
       Logger.log(error.message);
       process.exit(1);
     }
+  }
+
+  private async runCommand(command, functionName, params) {
+    const target = this.commands.get(command);
+
+    const moduleConfig = this.configuration.loadModuleConfiguration(command);
+    const optionFromFile = moduleConfig.commands?.commands[functionName] ?? {};
+    const mergedOptions = Object.assign({}, params, optionFromFile);
+
+    Logger.debug(`Running command: ${command}.${functionName}`, mergedOptions);
+    return await target[functionName](mergedOptions);
   }
 
   private printOutput(output: any) {
@@ -121,7 +174,7 @@ export class CommandLineInterface {
     }
 
     Logger.log('Usage: cy --serve');
-    Logger.log('Usage: cy <command> <subcommand> options...');
+    Logger.log('Usage: cy <command>.<subcommand> options...');
 
     this.commands.forEach((object, command) => {
       Logger.log(command);
