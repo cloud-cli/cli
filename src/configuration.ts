@@ -24,8 +24,6 @@ export class Configuration {
 }
 
 export interface ModuleConfiguration {
-  port?: number;
-  host?: string;
   commands?: {
     [command: string]: object;
   };
