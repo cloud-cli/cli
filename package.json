@@ -30,9 +30,9 @@
   "author": "Darlan Alves <me@darlanalv.es>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/homebots/cloudy/issues"
+    "url": "https://github.com/cloud-cli/cli/issues"
   },
-  "homepage": "https://github.com/homebots/cloudy#readme",
+  "homepage": "https://github.com/cloud-cli/cli#readme",
   "devDependencies": {
     "@types/jest": "^27.4.0",
     "@types/node": "^14.18.9",
