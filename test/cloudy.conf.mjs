@@ -8,3 +8,5 @@ const foo = {
 export default {
   foo,
 };
+
+export const apiPort = 8080;
