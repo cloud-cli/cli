@@ -7,6 +7,7 @@ import { Configuration } from './configuration.js';
 import { Logger } from './logger.js';
 
 export type CallableCommands = Record<string, Function>;
+export type CommandTree = Record<string, CallableCommands>;
 
 export class CommandLineInterface {
   private commands = new Map<string, CallableCommands>();
@@ -21,9 +22,9 @@ export class CommandLineInterface {
     }
 
     try {
-      const tools = (await import(filePath)).default as Array<[string, CallableCommands]>;
+      const tools = (await import(filePath)).default as CommandTree;
 
-      Array.from(tools).forEach(([name, commands]) => {
+      Object.entries(tools).forEach(([name, commands]) => {
         this.commands.set(name, commands);
       });
     } catch (error) {

@@ -1,11 +1,10 @@
-const test = {
-  foo(params) {
+const foo = {
+  test(params) {
     console.log('called foo with', params);
     return { foo: params };
   },
 };
 
-export default [
-  ['foo', test],
-  ['bar', test],
-];
+export default {
+  foo,
+};
