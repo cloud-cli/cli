@@ -116,8 +116,8 @@ export class CommandLineInterface {
     const target = this.commands.get(command);
     const optionsFromCli = this.parseParamsFromCli(params);
 
-    if (this.isValidCommand(target, command, functionName)) {
-      Logger.log(`Invalid command: ${command} ${functionName || ''}`);
+    if (!this.isValidCommand(target, command, functionName)) {
+      Logger.log(`Invalid command: ${command}.${functionName || ''}`);
       this.showHelpAndExit();
     }
 
