@@ -63,7 +63,7 @@ export class CommandLineInterface {
 
     const [command, functionName] = request.url.slice(1).split('.');
     const target = this.commands.get(command);
-    if (!target || !command || !functionName || request.method !== 'POST') {
+    if (this.isValidCommand(target, command, functionName) || request.method !== 'POST') {
       response.writeHead(400, 'Bad command, function or options');
       const help = {};
       this.commands.forEach((object, command) => {
@@ -98,6 +98,10 @@ export class CommandLineInterface {
     }
   }
 
+  private isValidCommand(target: object, command: string, functionName: string) {
+    return target && command && functionName && target[command] && typeof target[command][functionName] === 'function';
+  }
+
   private createNext() {
     const out: any = {};
     out.promise = new Promise((resolve) => (out.resolve = resolve));
@@ -112,7 +116,7 @@ export class CommandLineInterface {
     const target = this.commands.get(command);
     const optionsFromCli = this.parseParamsFromCli(params);
 
-    if (!target || !functionName || !target[functionName]) {
+    if (this.isValidCommand(target, command, functionName)) {
       Logger.log(`Invalid command: ${command} ${functionName || ''}`);
       this.showHelpAndExit();
     }
