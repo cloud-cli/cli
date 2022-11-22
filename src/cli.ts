@@ -81,11 +81,11 @@ export class CommandLineInterface {
       return;
     }
 
-    const { next, promise } = this.createNext();
-    bodyParser.json()(request, response, next);
-    await promise;
-
     try {
+      const { next, promise } = this.createNext();
+      bodyParser.json()(request, response, next);
+      await promise;
+
       const output = await this.runCommand(command, functionName, request.body);
       response.writeHead(200, 'OK');
       response.write(JSON.stringify(output, null, 2));
@@ -93,6 +93,7 @@ export class CommandLineInterface {
     } catch (error) {
       response.writeHead(500, 'Oops');
       response.write(error.message);
+      Logger.log(error);
       response.end();
     }
   }
