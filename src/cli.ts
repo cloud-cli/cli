@@ -88,7 +88,7 @@ export class CommandLineInterface {
 
       const output = await this.runCommand(command, functionName, request.body);
       response.writeHead(200, 'OK');
-      response.write(JSON.stringify(output, null, 2));
+      response.write(JSON.stringify(output, null, 2) || '');
       response.end();
     } catch (error) {
       response.writeHead(500, 'Oops');
