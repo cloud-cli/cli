@@ -63,9 +63,11 @@ export class CommandLineInterface {
 
     const [command, functionName] = request.url.slice(1).split('.');
     const target = this.commands.get(command);
+
     if (this.isValidCommand(target, command, functionName) || request.method !== 'POST') {
       response.writeHead(400, 'Bad command, function or options');
       const help = {};
+
       this.commands.forEach((object, command) => {
         help[command] = [];
 
@@ -76,6 +78,7 @@ export class CommandLineInterface {
           }
         });
       });
+
       response.write(JSON.stringify(help, null, 2));
       response.end();
       return;
@@ -99,7 +102,7 @@ export class CommandLineInterface {
   }
 
   private isValidCommand(target: object, command: string, functionName: string) {
-    return target && command && functionName && target[command] && typeof target[command][functionName] === 'function';
+    return target && command && functionName && typeof target[functionName] === 'function';
   }
 
   private createNext() {
