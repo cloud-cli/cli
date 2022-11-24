@@ -112,15 +112,18 @@ class HttpCommand {
       await promise;
 
       const output = await this.runCommand(target, command, functionName, request.body);
+      const text = JSON.stringify(output || '', null, 2);
+
       response.writeHead(200, 'OK');
-      response.write(JSON.stringify(output, null, 2) || '');
+      response.write(text);
       response.end();
     } catch (error) {
       response.writeHead(500, 'Oops');
-      response.write(error.message);
+      response.write(error.message || error);
       Logger.log(error);
-      response.end();
     }
+
+    response.end();
   }
 
   async serve() {
