@@ -118,9 +118,9 @@ class HttpCommand {
       response.write(text);
       response.end();
     } catch (error) {
+      Logger.log(error);
       response.writeHead(500, 'Oops');
       response.write(error.message || error);
-      Logger.log(error);
     }
 
     response.end();
