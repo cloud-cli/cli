@@ -1,6 +1,6 @@
 const foo = {
   test(params) {
-    console.log('called foo with', params);
+    console.log('foo was called with', params);
     return { foo: params };
   },
 };

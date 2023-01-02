@@ -14,7 +14,7 @@ export class CliCommand {
     let remote: ClientRequest;
 
     try {
-      request(`http://${remoteHost}:${apiPort}/${command}`, {
+      remote = request(`http://${remoteHost}:${apiPort}/${command}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: this.config.key },
       });

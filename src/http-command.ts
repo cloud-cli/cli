@@ -20,7 +20,7 @@ export class HttpCommand {
       setTimeout(() => {
         response.writeHead(404, 'Not found');
         response.end();
-      }, 10);
+      }, 5000);
       return;
     }
 
@@ -69,9 +69,10 @@ export class HttpCommand {
 
   async serve() {
     const { apiHost, apiPort } = this.config.settings;
-    Logger.log(`Started services at ${apiHost}:${apiPort}.`);
     const server = createServer((request, response) => this.run(request, response));
+
     server.listen(apiPort, apiHost);
+    Logger.log(`Started services at ${apiHost}:${apiPort}.`);
   }
 
   async showHelpAndExit() {
@@ -98,7 +99,9 @@ export class HttpCommand {
   protected async fetchCommands(): Promise<Record<string, string[]>> {
     return new Promise((resolve, reject) => {
       const { apiPort, remoteHost } = this.config.settings;
-      const remote = request(`http://${remoteHost}:${apiPort}/`);
+      const remote = request(`http://${remoteHost}:${apiPort}/`, {
+        headers: { authorization: this.config.key },
+      });
 
       remote.on('response', (response) => {
         const chunks = [];
