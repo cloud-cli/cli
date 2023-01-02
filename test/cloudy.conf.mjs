@@ -9,4 +9,6 @@ export default {
   foo,
 };
 
-export const apiPort = 8080;
+export const apiPort = 8888;
+export const apiHost = 'localhost';
+export const remoteHost = 'localhost';
