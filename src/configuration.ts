@@ -32,10 +32,15 @@ export class CloudConfiguration {
   async loadCloudConfiguration(): Promise<void> {
     const filePath = join(process.cwd(), 'cloudy.conf.mjs');
     const keyPath = join(process.cwd(), 'key');
+
+    if (!existsSync(keyPath)) {
+      throw new Error(`Key not found at ${keyPath}`);
+    }
+
     this.key = readFileSync(keyPath, 'utf-8').trim();
 
     if (!existsSync(filePath)) {
-      Logger.log(`Configuration file at ${filePath} not found`);
+      Logger.log(`Configuration file not found at ${filePath}`);
       this.settings = defaults as Configuration;
       return;
     }

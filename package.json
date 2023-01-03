@@ -2,7 +2,7 @@
   "name": "@cloud-cli/cli",
   "version": "0.0.0",
   "description": "CLI for the Cloud CLI project",
-  "main": "./dist/index.js",
+  "main": "./dist/node.mjs",
   "types": "./dist/index.d.ts",
   "type": "module",
   "bin": {
@@ -13,9 +13,9 @@
     "ztest": "./node_modules/.bin/ts-node ./node_modules/jasmine/bin/jasmine --config=./jasmine.json",
     "tdd": "./node_modules/.bin/nodemon -w src -e ts -x ./node_modules/.bin/ts-node ./node_modules/jasmine/bin/jasmine --config=./jasmine.json",
     "coverage": "./node_modules/.bin/nyc -r html -e .ts -x \"src/**/*.spec.ts\" npm run test",
-    "build": "rm -rf ./dist/* && npm run tsc && chmod +x dist/run.js",
+    "build": "rm -rf ./dist/* && npm run tsc && chmod +x dist/run.js && npm run rollup",
     "tsc": "tsc --project ./tsconfig.json",
-    "start": "node dist/run.js"
+    "rollup": "./node_modules/.bin/rollup -c rollup.config.js && mv index.js dist/node.mjs"
   },
   "keywords": [
     "cloudy"
@@ -34,20 +34,25 @@
   },
   "homepage": "https://github.com/cloud-cli/cli#readme",
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^22.0.2",
+    "@rollup/plugin-json": "^6.0.0",
+    "@rollup/plugin-node-resolve": "^14.0.1",
+    "@rollup/plugin-typescript": "^8.5.0",
     "@types/jest": "^27.4.0",
     "@types/node": "^14.18.9",
     "@types/yargs": "^16.0.0",
     "jest": "^27.4.7",
     "nyc": "^15.1.0",
     "prettier": "^2.5.1",
+    "rollup": "^2.79.0",
     "ts-jest": "^27.1.3",
     "ts-jest-resolver": "^1.1.0",
     "ts-node": "^9.1.1",
+    "tslib": "^2.4.1",
     "typescript": "^4.5.5"
   },
   "dependencies": {
-    "@cloud-cli/gw": "^1.5.0",
     "body-parser": "^1.20.1",
-    "yargs": "^15.4.1"
+    "yargs": "^17.6.2"
   }
 }
