@@ -78,7 +78,7 @@ export class HttpCommand {
   async showHelpAndExit() {
     const commands = await this.fetchCommands();
 
-    if (!commands.length) {
+    if (!commands) {
       Logger.log('No commands available.');
       process.exit(1);
     }
@@ -86,12 +86,13 @@ export class HttpCommand {
     Logger.log('Usage: cy <command>.<subcommand> --option=value');
     const entries = Object.entries(commands);
 
-    entries.forEach((subcommands, command) => {
+    entries.forEach((entry) => {
+      const [command, subcommands] = entry;
       Logger.log(command);
       subcommands.forEach((name) => Logger.log('  ', name));
     });
 
-    Logger.log(`Example:\n${entries[0][0]}.${entries[0][1][0]} --foo "foo"`);
+    Logger.log(`Example:\n\n\t${entries[0][0]}.${entries[0][1][0]} --foo "foo"`);
 
     process.exit(0);
   }
@@ -110,7 +111,7 @@ export class HttpCommand {
           Logger.debug(`Fetch command returned ${response.statusCode}: ${response.statusMessage}`);
         }
 
-        response.on('error', (error) => reject(error));
+        response.on('error', reject);
         response.on('data', (chunk) => chunks.push(chunk));
         response.on('end', () => {
           const body = Buffer.concat(chunks).toString('utf-8');
