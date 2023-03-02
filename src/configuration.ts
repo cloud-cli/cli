@@ -4,7 +4,7 @@ import { Logger } from './logger.js';
 import { init } from './constants.js';
 
 export type CallableCommands = Record<string, Function>;
-export type CommandTree = Record<string, CallableCommands>;
+export type CommandTree = Record<string | typeof init, CallableCommands>;
 
 export interface ModuleConfiguration {
   commands?: {
@@ -49,6 +49,8 @@ export class CloudConfiguration {
     try {
       const config = await import(filePath);
       const tools = config.default as CommandTree;
+
+      this.commands.set(init, tools[init]);
 
       Object.entries(tools).forEach(([name, commands]) => {
         this.commands.set(name, commands);

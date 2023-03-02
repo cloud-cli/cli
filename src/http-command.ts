@@ -80,6 +80,7 @@ export class HttpCommand {
     const initializer = this.config.commands.get(init) as unknown as Function | undefined;
 
     if (initializer) {
+      Logger.log('Running initializers.');
       initializer();
     }
   }
