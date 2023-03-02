@@ -1,23 +1,26 @@
 import { readFileSync } from 'fs';
 import { ClientRequest, request } from 'http';
+import { request as httpsRequest } from 'https';
 import yargs from 'yargs';
 import { CloudConfiguration } from './configuration.js';
 import { Logger } from './logger.js';
 
 export class CliCommand {
-  constructor(private config: CloudConfiguration) {}
+  constructor(private config: CloudConfiguration) { }
 
   async run(args: string[]) {
     const [command, ...params] = args;
     const json = this.parseParamsFromCli(params);
     const { apiPort, remoteHost } = this.config.settings;
+    const url = new URL(`${remoteHost}:${apiPort}/${command}`);
+    const fn = url.protocol === 'https:' ? httpsRequest : request;
+    const headers = { 'content-type': 'application/json', authorization: this.config.key };
     let remote: ClientRequest;
 
     try {
-      remote = request(`${remoteHost}:${apiPort}/${command}`, {
+      remote = fn(url, {
         method: 'POST',
-        followAllRedirects: true,
-        headers: { 'content-type': 'application/json', authorization: this.config.key },
+        headers,
       });
     } catch (error) {
       Logger.log('Failed to connect to server');

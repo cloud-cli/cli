@@ -1,10 +1,11 @@
 import bodyParser from 'body-parser';
 import { createServer, IncomingMessage, request, ServerResponse } from 'http';
+import { request as httpsRequest } from 'https';
 import { CloudConfiguration } from './configuration';
 import { Logger } from './logger.js';
 
 export class HttpCommand {
-  constructor(private config: CloudConfiguration) {}
+  constructor(private config: CloudConfiguration) { }
 
   async run(request: IncomingMessage & { body?: any }, response: ServerResponse) {
     if (request.method !== 'POST' && request.method !== 'GET') {
@@ -92,7 +93,9 @@ export class HttpCommand {
       subcommands.forEach((name) => Logger.log('  ', name));
     });
 
-    Logger.log(`Example:\n\n\t${entries[0][0]}.${entries[0][1][0]} --foo "foo"`);
+    if (entries.length) {
+      Logger.log(`Example:\n\n\t${entries[0][0]}.${entries[0][1][0]} --foo "foo"`);
+    }
 
     process.exit(0);
   }
@@ -100,9 +103,10 @@ export class HttpCommand {
   protected async fetchCommands(): Promise<Record<string, string[]>> {
     return new Promise((resolve, reject) => {
       const { apiPort, remoteHost } = this.config.settings;
-      const remote = request(`http://${remoteHost}:${apiPort}/`, {
-        headers: { authorization: this.config.key },
-      });
+      const url = new URL(`${remoteHost}:${apiPort}/`);
+      const headers = { authorization: this.config.key };
+      const fn = url.protocol === 'https:' ? httpsRequest : request;
+      const remote = fn(url, { headers });
 
       remote.on('response', (response) => {
         const chunks = [];
