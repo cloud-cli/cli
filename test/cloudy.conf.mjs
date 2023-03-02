@@ -1,4 +1,10 @@
+import { init } from '../dist/index.js';
+
 const foo = {
+  [init]() {
+    console.log('initializer called');
+  },
+
   test(params) {
     console.log('foo was called with', params);
     return { foo: params };
@@ -10,5 +16,5 @@ export default {
 };
 
 export const apiPort = 8888;
-export const apiHost = 'localhost';
-export const remoteHost = 'localhost';
+export const apiHost = '127.0.0.1';
+export const remoteHost = 'http://localhost';

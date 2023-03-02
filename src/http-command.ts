@@ -3,6 +3,7 @@ import { createServer, IncomingMessage, request, ServerResponse } from 'http';
 import { request as httpsRequest } from 'https';
 import { CloudConfiguration } from './configuration';
 import { Logger } from './logger.js';
+import { init } from './constants.js';
 
 export class HttpCommand {
   constructor(private config: CloudConfiguration) { }
@@ -33,6 +34,8 @@ export class HttpCommand {
       const help = {};
 
       this.config.commands.forEach((object, command) => {
+        if (command === init) return;
+
         help[command] = [];
 
         const properties = Object.getOwnPropertyNames(object);
@@ -74,6 +77,11 @@ export class HttpCommand {
 
     server.listen(apiPort, apiHost);
     Logger.log(`Started services at ${apiHost}:${apiPort}.`);
+    const initializer = this.config.commands.get(init) as unknown as Function | undefined;
+
+    if (initializer) {
+      initializer();
+    }
   }
 
   async showHelpAndExit() {

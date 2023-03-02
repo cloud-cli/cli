@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { Logger } from './logger.js';
+import { init } from './constants.js';
 
 export type CallableCommands = Record<string, Function>;
 export type CommandTree = Record<string, CallableCommands>;
@@ -25,7 +26,7 @@ const defaults: Partial<Configuration> = {
 };
 
 export class CloudConfiguration {
-  commands = new Map<string, CallableCommands>();
+  commands = new Map<string | typeof init, CallableCommands>();
   settings: Configuration;
   key: string;
 

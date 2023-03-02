@@ -35,13 +35,18 @@ Next, let's create a configuration file called `cloudy.conf.mjs` on the server:
 ```ts
 // import your plugins
 import foo from 'foo';
+import { init } from '@cloud-cli/cli';
+
+function initialize() {
+  // runs when the http server starts
+}
 
 // export commands from plugins
-export default { foo };
+export default { foo, [init]: initialize };
 
 // optional, change remote port
 export const apiPort = 1234;
-export const remoteHost = 'localhost';
+export const apiHost = '0.0.0.0';
 ```
 
 And then we start the Cloudy server:
@@ -67,9 +72,8 @@ From the same folder as your config file and key, you can always run `cy --help`
 ## How it works
 
 - A call to `cy foo.bar --option value` on localhost is converted to a POST request to `your-server.com/foo.bar`
-with a JSON body `{ "option": "value" }`.
+  with a JSON body `{ "option": "value" }`.
 
 - The server runs your command and sometimes returns an output
 
 - The same commands can be executed with `cy` inside the server and in your local machine.
-
