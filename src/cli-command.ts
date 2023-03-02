@@ -14,8 +14,9 @@ export class CliCommand {
     let remote: ClientRequest;
 
     try {
-      remote = request(`http://${remoteHost}:${apiPort}/${command}`, {
+      remote = request(`${remoteHost}:${apiPort}/${command}`, {
         method: 'POST',
+        followAllRedirects: true,
         headers: { 'content-type': 'application/json', authorization: this.config.key },
       });
     } catch (error) {
