@@ -2,7 +2,7 @@
   "name": "@cloud-cli/cli",
   "version": "0.0.0",
   "description": "CLI for the Cloud CLI project",
-  "main": "./dist/node.mjs",
+  "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "type": "module",
   "bin": {
@@ -10,10 +10,9 @@
   },
   "scripts": {
     "test": "echo ok",
-    "ztest": "./node_modules/.bin/ts-node ./node_modules/jasmine/bin/jasmine --config=./jasmine.json",
-    "tdd": "./node_modules/.bin/nodemon -w src -e ts -x ./node_modules/.bin/ts-node ./node_modules/jasmine/bin/jasmine --config=./jasmine.json",
-    "coverage": "./node_modules/.bin/nyc -r html -e .ts -x \"src/**/*.spec.ts\" npm run test",
-    "build": "rm -rf ./dist/* && npm run tsc && chmod +x dist/run.js && npm run rollup",
+    "ztest": "jest",
+    "tdd": "jest --watchAll",
+    "build": "rm -rf ./dist/* && npm run tsc && chmod +x dist/run.js",
     "tsc": "tsc --project ./tsconfig.json",
     "rollup": "./node_modules/.bin/rollup -c rollup.config.js && mv index.js dist/node.mjs"
   },
