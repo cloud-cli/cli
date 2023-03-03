@@ -25,10 +25,11 @@ export class CliCommand {
     } catch (error) {
       Logger.log('Failed to connect to server');
       Logger.debug(error.message);
+      return;
     }
 
     remote.on('response', (response) => {
-      const chunks = [];
+      const chunks: Buffer[] = [];
 
       if (response.statusCode !== 200) {
         console.log(`${response.statusCode}: ${response.statusMessage}`);

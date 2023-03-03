@@ -26,7 +26,7 @@ export class HttpCommand {
       return;
     }
 
-    const [command, functionName] = request.url.slice(1).split('.');
+    const [command, functionName] = String(request.url).slice(1).split('.');
     const target = this.config.commands.get(command);
 
     if (!this.isValidCommand(target, command, functionName) || request.method !== 'POST') {
@@ -120,7 +120,7 @@ export class HttpCommand {
       const remote = fn(url, { headers });
 
       remote.on('response', (response) => {
-        const chunks = [];
+        const chunks: Buffer[] = [];
 
         if (response.statusCode !== 200) {
           Logger.debug(`Fetch command returned ${response.statusCode}: ${response.statusMessage}`);
@@ -143,7 +143,7 @@ export class HttpCommand {
     });
   }
 
-  protected isValidCommand(target: object, command: string, functionName: string) {
+  protected isValidCommand(target: object | undefined, command: string, functionName: string) {
     return target && command && functionName && typeof target[functionName] === 'function';
   }
 
