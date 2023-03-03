@@ -1,7 +1,3 @@
-export default {
-  transformIgnorePatterns: [],
-  moduleFileExtensions: ['ts', 'js'],
-  transform: {
-    '\\.[jt]s?$': ['ts-jest', { tsconfig: { allowJs: true } }],
-  },
-};
+import config from '@cloud-cli/jest-config';
+
+export default { ...config };

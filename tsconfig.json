@@ -1,14 +1,7 @@
 {
+  "extends": "@cloud-cli/typescript-config",
   "compilerOptions": {
-    "module": "ES2020",
-    "moduleResolution": "node",
-    "target": "es2015",
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "esModuleInterop": true,
-    "typeRoots": ["./node_modules/@types"],
-    "outDir": "./dist",
-    "declaration": true
+    "outDir": "./dist"
   },
   "include": ["./src/**/*.ts"]
 }

@@ -34,7 +34,9 @@ export class HttpCommand {
       const help = {};
 
       this.config.commands.forEach((object, command) => {
-        if (command === init) return;
+        if (command === init) {
+          return;
+        }
 
         help[command] = [];
 
