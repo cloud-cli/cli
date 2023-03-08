@@ -95,7 +95,7 @@ export class HttpCommand {
       process.exit(1);
     }
 
-    Logger.log('Usage: cy <command>.<subcommand> --option=value');
+    Logger.log('Usage: cy <command>.<subcommand> --option=value\nAvailable commands:\n');
     const entries = Object.entries(commands);
 
     entries.forEach((entry) => {
@@ -105,10 +105,10 @@ export class HttpCommand {
     });
 
     if (entries.length) {
-      Logger.log(`Example:\n\n\t${entries[0][0]}.${entries[0][1][0]} --foo "foo"`);
+      Logger.log(`\n\nExample:\n\n\t${entries[0][0]}.${entries[0][1][0]} --foo "foo"`);
     }
 
-    process.exit(0);
+    process.exit(1);
   }
 
   protected async fetchCommands(): Promise<Record<string, string[]>> {
