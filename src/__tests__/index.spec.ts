@@ -15,9 +15,9 @@ describe('CLI as a module', () => {
     const server = createServer((req, res) => {
       const body = [];
       req.on('data', c => body.push(c));
-      req.on('end', () =>{
+      req.on('end', () => {
         serverCalls.push([req, Buffer.concat(body).toString('utf8'), res])
-      })
+      });
       res.end('');
     });
 
@@ -33,11 +33,11 @@ describe('CLI as a module', () => {
     await callServer('command.name', { foo: true }, config);
 
     server.close();
-    console.log(serverCalls);
     expect(serverCalls.length).toBe(1);
 
-    const [request] = serverCalls[0];
+    const [request, body] = serverCalls[0];
     expect(request.url).toBe('/command.name');
     expect(request.method).toBe('POST');
+    expect(JSON.parse(body)).toEqual({ foo: true });
   });
 })
