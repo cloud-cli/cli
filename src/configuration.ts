@@ -16,6 +16,7 @@ export interface Configuration {
   default: CommandTree;
   apiPort?: number;
   apiHost?: string;
+  key?: string;
   remoteHost?: string;
 }
 
@@ -23,28 +24,23 @@ const defaults: Partial<Configuration> = {
   apiPort: 80,
   apiHost: '0.0.0.0',
   remoteHost: 'localhost',
+  key: '',
 };
 
 export class CloudConfiguration {
   commands = new Map<string | typeof init, CallableCommands>();
   settings: Configuration;
-  key: string;
 
   async loadCloudConfiguration(): Promise<void> {
     const filePath = join(process.cwd(), 'cloudy.conf.mjs');
-    const keyPath = join(process.cwd(), 'key');
 
-    if (!existsSync(keyPath)) {
-      throw new Error(`Key not found at ${keyPath}`);
-    }
-
-    this.key = readFileSync(keyPath, 'utf-8').trim();
 
     if (!existsSync(filePath)) {
       Logger.log(`Configuration file not found at ${filePath}`);
       this.settings = defaults as Configuration;
       return;
     }
+
 
     try {
       const config = await import(filePath);
@@ -62,6 +58,20 @@ export class CloudConfiguration {
       Logger.log(error.message);
       throw error;
     }
+
+    this.loadKey();
+  }
+
+  private loadKey() {
+    if (this.settings.key) { return; }
+
+    const keyPath = join(process.cwd(), 'key');
+
+    if (!existsSync(keyPath)) {
+      throw new Error(`Key not found at ${keyPath}`);
+    }
+
+    this.settings.key = readFileSync(keyPath, 'utf-8').trim();
   }
 
   loadModuleConfiguration(moduleName: string): ModuleConfiguration {

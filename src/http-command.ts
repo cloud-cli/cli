@@ -17,8 +17,8 @@ export class HttpCommand {
 
     const remoteKey = request.headers.authorization;
 
-    if (this.config.key !== remoteKey) {
-      Logger.debug('Invalid key', remoteKey, this.config.key);
+    if (this.config.settings.key !== remoteKey) {
+      Logger.debug('Invalid key', remoteKey, this.config.settings.key);
       setTimeout(() => {
         response.writeHead(404, 'Not found');
         response.end();
@@ -113,9 +113,9 @@ export class HttpCommand {
 
   protected async fetchCommands(): Promise<Record<string, string[]>> {
     return new Promise((resolve, reject) => {
-      const { apiPort, remoteHost } = this.config.settings;
+      const { apiPort, remoteHost, key } = this.config.settings;
       const url = new URL(`${remoteHost}:${apiPort}/`);
-      const headers = { authorization: this.config.key };
+      const headers = { authorization: key };
       const fn = url.protocol === 'https:' ? httpsRequest : request;
       const remote = fn(url, { headers });
 

@@ -2,7 +2,7 @@ import { readFileSync } from 'fs';
 import { ClientRequest, request } from 'http';
 import { request as httpsRequest } from 'https';
 import yargs from 'yargs';
-import { CloudConfiguration } from './configuration.js';
+import { CloudConfiguration, Configuration } from './configuration.js';
 import { Logger } from './logger.js';
 
 export class CliCommand {
@@ -10,11 +10,20 @@ export class CliCommand {
 
   async run(args: string[]) {
     const [command, ...params] = args;
-    const json = this.parseParamsFromCli(params);
-    const { apiPort, remoteHost } = this.config.settings;
+    const jsonArgs = this.parseParamsFromCli(params);
+
+    return this.callServer(command, jsonArgs, this.config.settings);
+  }
+
+  async callServer(command: string, args: Record<string, any>, config: Configuration) {
+    const { apiPort, remoteHost, key } = config;
     const url = new URL(`${remoteHost}:${apiPort}/${command}`);
     const fn = url.protocol === 'https:' ? httpsRequest : request;
-    const headers = { 'content-type': 'application/json', authorization: this.config.key };
+    const headers = {
+      'content-type': 'application/json',
+      authorization: key
+    };
+
     let remote: ClientRequest;
 
     try {
@@ -25,42 +34,35 @@ export class CliCommand {
     } catch (error) {
       Logger.log('Failed to connect to server');
       Logger.debug(error.message);
-      return;
+
+      return Promise.reject(error);
     }
 
-    remote.on('response', (response) => {
-      const chunks: Buffer[] = [];
+    return new Promise((resolve, reject) => {
+      remote.on('response', (response) => {
+        const chunks: Buffer[] = [];
 
-      if (response.statusCode !== 200) {
-        console.log(`${response.statusCode}: ${response.statusMessage}`);
-      }
-
-      response.on('error', (error) => this.printOutput(error));
-      response.on('data', (chunk) => chunks.push(chunk));
-      response.on('end', () => {
-        const body = Buffer.concat(chunks).toString('utf-8');
-
-        try {
-          this.printOutput(JSON.parse(body));
-        } catch (error) {
-          console.log(body);
+        if (response.statusCode !== 200) {
+          Logger.log(`${response.statusCode}: ${response.statusMessage}\n\n`);
         }
+
+        response.on('error', reject);
+        response.on('data', (chunk) => chunks.push(chunk));
+        response.on('end', () => {
+          const body = Buffer.concat(chunks).toString('utf-8');
+
+          try {
+            resolve(JSON.parse(body));
+          } catch (error) {
+            resolve(body);
+          }
+        });
       });
+
+      remote.on('error', reject);
+      remote.write(JSON.stringify(args));
+      remote.end();
     });
-
-    remote.on('error', (error) => this.printOutput(error));
-    remote.write(JSON.stringify(json));
-    remote.end();
-  }
-
-  protected printOutput(output: any) {
-    if (output === undefined) return;
-
-    if (typeof output === 'object' && output) {
-      output = JSON.stringify(output);
-    }
-
-    Logger.log(output);
   }
 
   protected parseParamsFromCli(input: string[]) {

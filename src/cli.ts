@@ -19,6 +19,21 @@ export class CommandLineInterface {
       return this.http.serve();
     }
 
-    this.cli.run(args);
+    try {
+      const output = await this.cli.run(args);
+      this.printOutput(output);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  printOutput(output: any) {
+    if (output === undefined) return;
+
+    if (typeof output === 'object' && output) {
+      output = JSON.stringify(output);
+    }
+
+    console.log(output);
   }
 }
