@@ -157,7 +157,7 @@ export class HttpCommand {
 
   protected async runCommand(target: any, command: string, functionName: string, params: any) {
     const moduleConfig = this.config.loadModuleConfiguration(command);
-    const optionFromFile = moduleConfig.commands?.commands[functionName] ?? {};
+    const optionFromFile = moduleConfig.commands?.[functionName] ?? {};
     const mergedOptions = Object.assign({}, params, optionFromFile);
 
     Logger.debug(`Running command: ${command}.${functionName}`, mergedOptions);
