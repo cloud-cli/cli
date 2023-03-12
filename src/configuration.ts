@@ -7,7 +7,7 @@ export type CallableCommands = Record<string, Function>;
 export type CommandTree = Record<string | typeof init, CallableCommands>;
 
 export interface ModuleConfiguration {
-  commands?: Record<string | object>;
+  commands?: Record<string, object>;
 }
 
 export interface Configuration {
