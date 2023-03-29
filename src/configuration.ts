@@ -32,7 +32,6 @@ export class CloudConfiguration {
   async loadCloudConfiguration(): Promise<void> {
     const filePath = join(process.cwd(), 'cloudy.conf.mjs');
 
-
     if (!existsSync(filePath)) {
       Logger.log(`Configuration file not found at ${filePath}`);
       this.settings = defaults as Configuration;
@@ -44,12 +43,7 @@ export class CloudConfiguration {
       const config = await import(filePath);
       const tools = config.default as CommandTree;
 
-      this.commands.set(init, tools[init]);
-
-      Object.entries(tools).forEach(([name, commands]) => {
-        this.commands.set(name, commands);
-      });
-
+      this.importCommands(tools);
       this.settings = { ...defaults, ...config };
     } catch (error) {
       Logger.log(`Invalid cloud configuration file: ${filePath}`);
@@ -58,6 +52,14 @@ export class CloudConfiguration {
     }
 
     this.loadKey();
+  }
+
+  importCommands(tools: CommandTree) {
+    this.commands.set(init, tools[init]);
+
+    Object.entries(tools).forEach(([name, commands]) => {
+      this.commands.set(name, commands);
+    });
   }
 
   private loadKey() {

@@ -1,6 +1,8 @@
-import { init, callServer } from '../index.js';
+import { init, run } from '../index.js';
 import { createServer } from 'http';
-import { Configuration } from '../configuration.js';
+import { CloudConfiguration, Configuration } from '../configuration.js';
+import { CommandLineInterface } from '../cli.js';
+import { Logger } from '../logger.js';
 
 describe('init symbol', () => {
   it('should export a symbol for cloud initializers', () => {
@@ -29,8 +31,8 @@ describe('CLI as a module', () => {
       remoteHost: 'http://localhost',
     };
 
-    server.listen(port)
-    await callServer('command.name', { foo: true }, config);
+    server.listen(port);
+    await run('command.name', { foo: true }, config);
 
     server.close();
     expect(serverCalls.length).toBe(1);
@@ -40,4 +42,85 @@ describe('CLI as a module', () => {
     expect(request.method).toBe('POST');
     expect(JSON.parse(body)).toEqual({ foo: true });
   });
-})
+});
+
+describe('run initializers for a module', () => {
+  function setup() {
+    const settings: Configuration = {
+      key: 'key',
+      default: {
+        [init]: jest.fn(),
+        foo: {
+          [init]: jest.fn(),
+          tests() { },
+        }
+      } as any,
+      apiHost: 'localhost',
+      apiPort: 12345 + ~~(Math.random() * 1000),
+      remoteHost: 'http://localhost',
+    };
+
+    const config = new CloudConfiguration();
+    config.settings = settings;
+    config.importCommands(settings.default);
+    jest.spyOn(config, 'loadCloudConfiguration').mockImplementation(async () => { });
+
+    return { settings, config };
+  }
+
+  it('runs the initializer when the server is started', async () => {
+    const { settings, config } = setup();
+
+    const cli = new CommandLineInterface(config);
+
+    const server = await cli.run(['--serve']);
+    server.close();
+
+    expect(settings.default[init]).toHaveBeenCalled();
+  });
+
+  it('runs print a help text and exit when "--help" is given as the only argument', async () => {
+    const { settings, config } = setup();
+
+    jest.spyOn(Logger, 'log').mockReturnValue(void 0);
+    jest.spyOn(process, 'exit').mockImplementation();
+
+    const cli = new CommandLineInterface(config);
+    const server = await cli.run(['--serve']);
+    await cli.run(['--help']);
+    server.close();
+
+    expect(Logger.log).toHaveBeenCalledWith('Started services at localhost:' + settings.apiPort + '.');
+    expect(Logger.log).toHaveBeenCalledWith('Running general initializers.');
+    expect(Logger.log).toHaveBeenCalledWith('Running initializers for foo');
+
+    expect(Logger.log).toHaveBeenCalledWith('Usage: cy <command>.<subcommand> --option=value\nAvailable commands:\n');
+    expect(Logger.log).toHaveBeenCalledWith('foo');
+    expect(Logger.log).toHaveBeenCalledWith('  ', 'tests');
+    expect(Logger.log).toHaveBeenCalledWith('\n\nExample:\n\n\tfoo.tests --foo "foo"');
+    expect(process.exit).toHaveBeenCalledWith(1);
+  });
+
+  it('should show a text when no command is available', async () => {
+    const config = new CloudConfiguration();
+    config.settings = {
+      key: 'key',
+      default: {} as any,
+      apiHost: 'localhost',
+      apiPort: 12345 + ~~(Math.random() * 1000),
+      remoteHost: 'http://localhost',
+    };
+
+    jest.spyOn(config, 'loadCloudConfiguration').mockImplementation(async () => { });
+    jest.spyOn(Logger, 'log').mockReturnValue(void 0);
+    jest.spyOn(process, 'exit').mockImplementation();
+
+    const cli = new CommandLineInterface(config);
+    const server = await cli.run(['--serve']);
+    await cli.run(['--help']);
+    server.close();
+
+    expect(Logger.log).toHaveBeenCalledWith('No commands available.');
+    expect(process.exit).toHaveBeenCalledWith(1);
+  })
+});

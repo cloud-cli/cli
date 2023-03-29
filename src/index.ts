@@ -3,7 +3,7 @@ import { CloudConfiguration, Configuration } from './configuration.js';
 
 export { init } from './constants.js';
 
-export function callServer(command: string, args: unknown, config: Configuration) {
+export function run(command: string, args: unknown, config: Configuration) {
   if (!config) {
     const loader = new CloudConfiguration();
     loader.loadCloudConfiguration();

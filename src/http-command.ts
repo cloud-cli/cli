@@ -34,7 +34,7 @@ export class HttpCommand {
       const help = {};
 
       this.config.commands.forEach((object, command) => {
-        if (command === init) {
+        if (command === init || !(object && typeof object === 'object')) {
           return;
         }
 
@@ -82,21 +82,31 @@ export class HttpCommand {
     const initializer = this.config.commands.get(init) as unknown as Function | undefined;
 
     if (initializer) {
-      Logger.log('Running initializers.');
+      Logger.log('Running general initializers.');
       initializer();
     }
+
+    this.config.commands.forEach((object: any, command) => {
+      if (command !== init && object && typeof object === 'object' && object[init]) {
+        Logger.log('Running initializers for ' + String(command));
+        object[init]();
+      }
+    });
+
+    return server;
   }
 
   async showHelpAndExit() {
     const commands = await this.fetchCommands();
+    const entries = Object.entries(commands);
 
-    if (!commands) {
+    if (!(commands && entries.length)) {
       Logger.log('No commands available.');
       process.exit(1);
     }
 
     Logger.log('Usage: cy <command>.<subcommand> --option=value\nAvailable commands:\n');
-    const entries = Object.entries(commands);
+
 
     entries.forEach((entry) => {
       const [command, subcommands] = entry;
