@@ -1,4 +1,4 @@
-import { init, run } from '../index.js';
+import { events, init, run } from '../index.js';
 import { createServer } from 'http';
 import { CloudConfiguration, Configuration } from '../configuration.js';
 import { CommandLineInterface } from '../cli.js';
@@ -124,3 +124,14 @@ describe('run initializers for a module', () => {
     expect(process.exit).toHaveBeenCalledWith(1);
   })
 });
+
+describe('events', () => {
+  it('should have an event emitter for modules to communicate', () => {
+    const spy = jest.fn();
+    const foo = { foo: true }
+    events.on('test', spy);
+    events.emit('test', foo);
+
+    expect(spy).toHaveBeenCalledWith(foo);
+  });
+})
