@@ -13,7 +13,7 @@ describe('init symbol', () => {
 describe('CLI as a module', () => {
   it('should call a remote server', async () => {
     const serverCalls = [];
-    const port = 5000 + ~~(Math.random() * 3000);
+    const port = 3000;
     const server = createServer((req, res) => {
       const body = [];
       req.on('data', c => body.push(c));
@@ -45,6 +45,7 @@ describe('CLI as a module', () => {
 });
 
 describe('run initializers for a module', () => {
+  let port = 3001;
   function setup() {
     const settings: Configuration = {
       key: 'key',
@@ -56,7 +57,7 @@ describe('run initializers for a module', () => {
         }
       } as any,
       apiHost: 'localhost',
-      apiPort: 12345 + ~~(Math.random() * 1000),
+      apiPort: port++,
       remoteHost: 'http://localhost',
     };
 
@@ -70,11 +71,15 @@ describe('run initializers for a module', () => {
 
   it('runs the initializer when the server is started', async () => {
     const { settings, config } = setup();
-
     const cli = new CommandLineInterface(config);
+    jest.spyOn(Logger, 'log').mockReturnValue(void 0);
 
     const server = await cli.run(['--serve']);
     server.close();
+
+    expect(Logger.log).toHaveBeenCalledWith('Started services at localhost:' + settings.apiPort + '.');
+    expect(Logger.log).toHaveBeenCalledWith('Running general initializers.');
+    expect(Logger.log).toHaveBeenCalledWith('Running initializers for foo');
 
     expect(settings.default[init]).toHaveBeenCalled();
   });
@@ -107,7 +112,7 @@ describe('run initializers for a module', () => {
       key: 'key',
       default: {} as any,
       apiHost: 'localhost',
-      apiPort: 12345 + ~~(Math.random() * 1000),
+      apiPort: 2999,
       remoteHost: 'http://localhost',
     };
 

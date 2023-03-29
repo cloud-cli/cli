@@ -1,5 +1,5 @@
 import bodyParser from 'body-parser';
-import { createServer, IncomingMessage, request, ServerResponse } from 'http';
+import { createServer, IncomingMessage, request, ServerResponse, Server } from 'http';
 import { request as httpsRequest } from 'https';
 import { CloudConfiguration } from './configuration';
 import { Logger } from './logger.js';
@@ -77,8 +77,6 @@ export class HttpCommand {
     const { apiHost, apiPort } = this.config.settings;
     const server = createServer((request, response) => this.run(request, response));
 
-    server.listen(apiPort, apiHost);
-    Logger.log(`Started services at ${apiHost}:${apiPort}.`);
     const initializer = this.config.commands.get(init) as unknown as Function | undefined;
 
     if (initializer) {
@@ -93,7 +91,11 @@ export class HttpCommand {
       }
     });
 
-    return server;
+    return new Promise<Server>(resolve => {
+      server.on('listening', () => resolve(server));
+      server.listen(apiPort, apiHost);
+      Logger.log(`Started services at ${apiHost}:${apiPort}.`);
+    });
   }
 
   async showHelpAndExit() {
