@@ -3,7 +3,7 @@ import { join } from 'path';
 import { Logger } from './logger.js';
 import { init } from './constants.js';
 
-export type CallableCommands = Record<string, Function>;
+export type CallableCommands = Record<string | typeof init, Function>;
 export type CommandTree = Record<string | typeof init, CallableCommands>;
 
 export interface ModuleConfiguration {
@@ -19,7 +19,7 @@ export interface Configuration {
 }
 
 const defaults: Partial<Configuration> = {
-  apiPort: 80,
+  apiPort: 1234,
   apiHost: '0.0.0.0',
   remoteHost: 'localhost',
   key: '',
@@ -38,20 +38,18 @@ export class CloudConfiguration {
       return;
     }
 
-
     try {
       const config = await import(filePath);
       const tools = config.default as CommandTree;
 
       this.importCommands(tools);
       this.settings = { ...defaults, ...config };
+      this.loadKey();
     } catch (error) {
       Logger.log(`Invalid cloud configuration file: ${filePath}`);
       Logger.log(error.message);
       throw error;
     }
-
-    this.loadKey();
   }
 
   importCommands(tools: CommandTree) {

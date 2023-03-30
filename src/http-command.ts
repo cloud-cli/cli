@@ -77,6 +77,16 @@ export class HttpCommand {
     const { apiHost, apiPort } = this.config.settings;
     const server = createServer((request, response) => this.run(request, response));
 
+    await this.runInitializers();
+
+    return new Promise<Server>(resolve => {
+      server.on('listening', () => resolve(server));
+      server.listen(apiPort, apiHost);
+      Logger.log(`Started services at ${apiHost}:${apiPort}.`);
+    });
+  }
+
+  private async runInitializers() {
     const initializer = this.config.commands.get(init) as unknown as Function | undefined;
 
     if (initializer) {
@@ -84,18 +94,18 @@ export class HttpCommand {
       initializer();
     }
 
-    this.config.commands.forEach((object: any, command) => {
+    const modules = Array.from(this.config.commands.entries());
+    for (const [command, object] of modules) {
       if (command !== init && object && typeof object === 'object' && object[init]) {
-        Logger.log('Running initializers for ' + String(command));
-        object[init]();
-      }
-    });
+        Logger.log('Running initializers for... ' + String(command));
 
-    return new Promise<Server>(resolve => {
-      server.on('listening', () => resolve(server));
-      server.listen(apiPort, apiHost);
-      Logger.log(`Started services at ${apiHost}:${apiPort}.`);
-    });
+        try {
+          await object[init]();
+        } catch (error) {
+          Logger.log('FAILED: ' + String(error));
+        }
+      }
+    }
   }
 
   async showHelpAndExit() {

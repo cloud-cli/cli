@@ -9,7 +9,7 @@
     "cy": "./dist/run.js"
   },
   "scripts": {
-    "test": "jest --detectOpenHandles",
+    "test": "jest",
     "tdd": "jest --watchAll",
     "build": "rm -rf ./dist/* && npm run tsc && chmod +x dist/run.js",
     "tsc": "tsc --project ./tsconfig.json"
