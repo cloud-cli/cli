@@ -67,10 +67,13 @@ export class CloudConfiguration {
     const modules = Object.keys(JSON.parse(pkg).dependencies || {})
       .filter(k => k.startsWith('@cloud-cli/'));
 
+    Logger.debug(`Found ${modules.length} modules: ${modules.join(', ') }`)
+
     for (const name of modules) {
       try {
         const m = await import(name);
         if (m.default && typeof m.default === 'object') {
+          Logger.debug('Loaded commands from ' + name);
           output[name] = m.default;
         }
       } catch {
