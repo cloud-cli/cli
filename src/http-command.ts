@@ -1,4 +1,3 @@
-import bodyParser from 'body-parser';
 import { createServer, IncomingMessage, request, ServerResponse, Server } from 'http';
 import { request as httpsRequest } from 'https';
 import { CloudConfiguration } from './configuration';
@@ -54,23 +53,18 @@ export class HttpCommand {
     }
 
     try {
-      const { next, promise } = this.createNext();
-      bodyParser.json()(request, response, next);
-      await promise;
-
-      const output = await this.runCommand(target, command, functionName, request.body);
+      const payload = await this.parseBody(request);
+      const output = await this.runCommand(target, command, functionName, payload);
       const text = JSON.stringify(output || '', null, 2);
 
       response.writeHead(200, 'OK');
-      response.write(text);
-      response.end();
+      response.end(text);
     } catch (error) {
       Logger.log(error);
       response.writeHead(500, 'Oops');
       response.write(error.message || error);
+      response.end();
     }
-
-    response.end();
   }
 
   async serve() {
@@ -86,6 +80,25 @@ export class HttpCommand {
     });
   }
 
+  private parseBody(request: IncomingMessage): Promise<object> {
+    return new Promise((resolve, reject) => {
+
+      const chunks = [];
+      request.on('data', (c) => chunks.push(c));
+      request.on('end', () => {
+        const text = Buffer.concat(chunks).toString('utf-8');
+        try {
+          resolve(JSON.parse(text));
+        } catch (e) {
+          reject(e);
+        }
+      });
+
+      request.on('error', reject);
+      request.on('close', () => reject(new Error('Request closed')));
+    });
+  }
+
   private async runInitializers() {
     const initializer = this.config.commands.get(init) as unknown as Function | undefined;
 
@@ -97,7 +110,7 @@ export class HttpCommand {
     const modules = Array.from(this.config.commands.entries());
     for (const [command, object] of modules) {
       if (command !== init && object && typeof object === 'object' && object[init]) {
-        Logger.log('Running initializers for... ' + String(command));
+        Logger.log('Running initializers for ' + String(command));
 
         try {
           await object[init]();
