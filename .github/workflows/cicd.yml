@@ -20,11 +20,11 @@ jobs:
           node-version: 18
       - run: |
           npm i @cloud-cli/cli @cloud-cli/sys
-          alias cy='./node_modules/.bin/cy'
+          cy='./node_modules/.bin/cy'
           cp test/cloudy.conf.mjs ./
           cy --serve &
           sleep 5
-          cy
-          cy .help
-          cy sys.update
+          $cy
+          $cy .help
+          $cy sys.update
           pkill node
