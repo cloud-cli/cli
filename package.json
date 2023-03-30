@@ -5,6 +5,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "type": "module",
+  "prettier": "@cloud-cli/prettier-config",
   "bin": {
     "cy": "./dist/run.js"
   },
@@ -32,9 +33,9 @@
   "homepage": "https://github.com/cloud-cli/cli#readme",
   "devDependencies": {
     "@cloud-cli/jest-config": "^1.0.0",
+    "@cloud-cli/prettier-config": "^1.0.0",
     "@cloud-cli/typescript-config": "^1.0.0",
-    "@types/yargs": "^16.0.0",
-    "prettier": "^2.5.1"
+    "@types/yargs": "^16.0.0"
   },
   "dependencies": {
     "yargs": "^17.6.2"

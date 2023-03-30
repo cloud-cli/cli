@@ -9,3 +9,22 @@ jobs:
     secrets:
       NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  self-test:
+    runs-on: ubuntu-latest
+    needs: release
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: |
+          npm i @cloud-cli/cli @cloud-cli/sys
+          alias cy='./node_modules/.bin/cy'
+          cp test/cloudy.conf.mjs ./
+          cy --serve &
+          sleep 5
+          cy
+          cy .help
+          cy sys.update
+          pkill node

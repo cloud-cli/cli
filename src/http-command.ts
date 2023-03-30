@@ -1,4 +1,5 @@
 import { createServer, IncomingMessage, request, ServerResponse, Server } from 'http';
+import { readFile } from 'fs/promises';
 import { request as httpsRequest } from 'https';
 import { CloudConfiguration } from './configuration';
 import { Logger } from './logger.js';
@@ -26,29 +27,15 @@ export class HttpCommand {
     }
 
     const [command, functionName] = String(request.url).slice(1).split('.');
+    if (!command && functionName === 'help') {
+      this.writeAvailableCommands(response);
+      return;
+    }
+
     const target = this.config.commands.get(command);
-
     if (!this.isValidCommand(target, command, functionName) || request.method !== 'POST') {
-      response.writeHead(400, 'Bad command, function or options');
-      const help = {};
-
-      this.config.commands.forEach((object, command) => {
-        if (command === init || !(object && typeof object === 'object')) {
-          return;
-        }
-
-        help[command] = [];
-
-        const properties = Object.getOwnPropertyNames(object);
-        properties.forEach((name) => {
-          if (name !== 'constructor' && typeof object[name] === 'function') {
-            help[command].push(name);
-          }
-        });
-      });
-
-      response.write(JSON.stringify(help, null, 2));
-      response.end();
+      response.writeHead(400, 'Bad command, function or options. Try cy .help for options');
+      this.writeAvailableCommands(response);
       return;
     }
 
@@ -65,6 +52,27 @@ export class HttpCommand {
       response.write(error.message || error);
       response.end();
     }
+  }
+
+  private writeAvailableCommands(response: ServerResponse) {
+    const help = {};
+
+    this.config.commands.forEach((object, command) => {
+      if (command === init || !(object && typeof object === 'object')) {
+        return;
+      }
+
+      help[command] = [];
+
+      const properties = Object.getOwnPropertyNames(object);
+      properties.forEach((name) => {
+        if (name !== 'constructor' && typeof object[name] === 'function') {
+          help[command].push(name);
+        }
+      });
+    });
+
+    response.end(JSON.stringify(help, null, 2));
   }
 
   async serve() {
@@ -110,10 +118,11 @@ export class HttpCommand {
     const modules = Array.from(this.config.commands.entries());
     for (const [command, object] of modules) {
       if (command !== init && object && typeof object === 'object' && object[init]) {
-        Logger.log('Running initializers for ' + String(command));
+        Logger.log('Running initializers for ' + command);
+        const config = await this.config.loadModuleConfiguration(command);
 
         try {
-          await object[init]();
+          await object[init](config);
         } catch (error) {
           Logger.log('FAILED: ' + String(error));
         }
@@ -191,7 +200,7 @@ export class HttpCommand {
   }
 
   protected async runCommand(target: any, command: string, functionName: string, params: any) {
-    const moduleConfig = this.config.loadModuleConfiguration(command);
+    const moduleConfig = await this.config.loadModuleConfiguration(command);
     const optionFromFile = moduleConfig.commands?.[functionName] ?? {};
     const mergedOptions = Object.assign({}, params, optionFromFile);
 
