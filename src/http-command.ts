@@ -1,5 +1,4 @@
 import { createServer, IncomingMessage, request, ServerResponse, Server } from 'http';
-import { readFile } from 'fs/promises';
 import { request as httpsRequest } from 'https';
 import { CloudConfiguration } from './configuration';
 import { Logger } from './logger.js';
