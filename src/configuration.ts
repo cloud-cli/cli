@@ -22,7 +22,7 @@ export interface Configuration {
 const defaults: Partial<Configuration> = {
   apiPort: 1234,
   apiHost: '0.0.0.0',
-  remoteHost: 'localhost',
+  remoteHost: 'http://127.0.0.1',
   key: '',
 };
 
