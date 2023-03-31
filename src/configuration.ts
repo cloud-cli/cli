@@ -61,17 +61,17 @@ export class CloudConfiguration {
   async autoLoadModules() {
     const tools = (this.settings.default || {}) as CommandTree;
     const pkg = await readFile(join(process.cwd(), 'package.json'), 'utf8');
-    const modules = Object.keys(JSON.parse(pkg).dependencies || {})
-      .filter(k => k.startsWith('@cloud-cli/'));
+    const prefix = '@cloud-cli/';
+    const modules = Object.keys(JSON.parse(pkg).dependencies || {}).filter((k) => k.startsWith(prefix));
 
-    Logger.debug(`Found ${modules.length} modules: ${modules.join(', ')}`)
+    Logger.debug(`Found ${modules.length} modules`);
 
     for (const name of modules) {
       try {
         const m = await import(name);
         if (m.default && typeof m.default === 'object') {
           Logger.debug('Loaded commands from ' + name);
-          tools[name] = m.default;
+          tools[name.replace(prefix, '')] = m.default;
         }
       } catch {
         Logger.log('Failed to load ' + name);
@@ -82,7 +82,9 @@ export class CloudConfiguration {
   }
 
   private async loadKey() {
-    if (this.settings.key) { return; }
+    if (this.settings.key) {
+      return;
+    }
 
     const keyPath = join(process.cwd(), 'key');
 
@@ -98,7 +100,7 @@ export class CloudConfiguration {
 
     try {
       if (existsSync(filePath)) {
-        return await this.readAndParse(filePath) as ModuleConfiguration;
+        return (await this.readAndParse(filePath)) as ModuleConfiguration;
       }
     } catch (error) {
       Logger.log(`Invalid configuration file for ${moduleName}: ${error.message}`);
