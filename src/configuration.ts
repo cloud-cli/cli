@@ -41,10 +41,6 @@ export class CloudConfiguration {
 
     try {
       const config = await import(filePath);
-      const tools = (config.default || {}) as CommandTree;
-
-      this.autoLoadModules(tools);
-      this.importCommands(tools);
       this.settings = { ...defaults, ...config };
       await this.loadKey();
     } catch (error) {
@@ -62,24 +58,27 @@ export class CloudConfiguration {
     });
   }
 
-  private async autoLoadModules(output: object) {
+  async autoLoadModules() {
+    const tools = (this.settings.default || {}) as CommandTree;
     const pkg = await readFile(join(process.cwd(), 'package.json'), 'utf8');
     const modules = Object.keys(JSON.parse(pkg).dependencies || {})
       .filter(k => k.startsWith('@cloud-cli/'));
 
-    Logger.debug(`Found ${modules.length} modules: ${modules.join(', ') }`)
+    Logger.debug(`Found ${modules.length} modules: ${modules.join(', ')}`)
 
     for (const name of modules) {
       try {
         const m = await import(name);
         if (m.default && typeof m.default === 'object') {
           Logger.debug('Loaded commands from ' + name);
-          output[name] = m.default;
+          tools[name] = m.default;
         }
       } catch {
         Logger.log('Failed to load ' + name);
       }
     }
+
+    this.importCommands(tools);
   }
 
   private async loadKey() {

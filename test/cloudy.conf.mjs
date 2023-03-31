@@ -1,4 +1,4 @@
-import { init } from '../dist/index.js';
+import { init } from '@cloud-cli/cli';
 
 const foo = {
   [init]() {
@@ -17,4 +17,4 @@ export default {
 
 export const apiPort = 8888;
 export const apiHost = '127.0.0.1';
-export const remoteHost = 'http://localhost';
+export const remoteHost = 'http://127.0.0.1';

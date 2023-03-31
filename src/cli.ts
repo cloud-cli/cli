@@ -22,6 +22,7 @@ export class CommandLineInterface {
     }
 
     if (args[0] === '--serve') {
+      await this.config.autoLoadModules();
       return this.http.serve();
     }
 
