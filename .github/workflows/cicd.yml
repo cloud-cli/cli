@@ -21,10 +21,10 @@ jobs:
       - run: cd test
       - run: npm i @cloud-cli/cli @cloud-cli/sys
       - run: |
-          PATH="./node_modules/.bin:$PATH"
           pwd
           echo 'b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c' > key
       - run: |
+          PATH="./node_modules/.bin:$PATH"
           DEBUG=1 cy --serve &
           sleep 5
           cy
