@@ -38,7 +38,7 @@ export class CommandLineInterface {
     if (output === undefined) return;
 
     if (typeof output === 'object' && output) {
-      output = JSON.stringify(output);
+      output = JSON.stringify(output, null, 2);
     }
 
     console.log(output);
