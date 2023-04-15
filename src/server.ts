@@ -4,7 +4,7 @@ import { CloudConfiguration } from './configuration';
 import { Logger } from './logger.js';
 import { init } from './constants.js';
 
-export class HttpCommand {
+export class HttpServer {
   constructor(private config: CloudConfiguration) { }
 
   async run(request: IncomingMessage & { body?: any }, response: ServerResponse) {
@@ -76,7 +76,7 @@ export class HttpCommand {
 
   async serve() {
     const { apiHost, apiPort } = this.config.settings;
-    const server = createServer((request, response) => this.run(request, response));
+    const server = createS12qerver((request, response) => this.run(request, response));
 
     await this.runInitializers();
 

@@ -1,15 +1,15 @@
 import { CloudConfiguration } from './configuration.js';
 import { CliCommand } from './cli-command.js';
-import { HttpCommand } from './http-command.js';
+import { HttpServer } from './server.js';
 
 export class CommandLineInterface {
-  protected http: HttpCommand;
+  protected http: HttpServer;
   protected cli: CliCommand;
 
   constructor(
     protected config = new CloudConfiguration(),
   ) {
-    this.http = new HttpCommand(config);
+    this.http = new HttpServer(config);
     this.cli = new CliCommand(config);
   }
 
