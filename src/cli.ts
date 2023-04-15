@@ -29,6 +29,7 @@ export class CommandLineInterface {
     try {
       const output = await this.cli.run(args);
       this.printOutput(output);
+      return output;
     } catch (error) {
       console.error(error);
     }

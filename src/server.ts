@@ -31,8 +31,8 @@ export class HttpServer {
       return;
     }
 
-    const target = this.config.commands.get(command);
-    if (!this.isValidCommand(target, command, functionName) || request.method !== 'POST') {
+    const functionMap = this.config.commands.get(command);
+    if (!this.isValidCommand(functionMap, command, functionName) || request.method !== 'POST') {
       response.writeHead(400, 'Bad command, function or options. Try cy .help for options');
       this.writeAvailableCommands(response);
       return;
@@ -40,7 +40,7 @@ export class HttpServer {
 
     try {
       const payload = await this.parseBody(request);
-      const output = await this.runCommand(target, command, functionName, payload);
+      const output = await this.runCommand(functionMap, command, functionName, payload);
       const text = JSON.stringify(output || '', null, 2);
 
       response.writeHead(200, 'OK');
@@ -51,6 +51,17 @@ export class HttpServer {
       response.write(error.message || error);
       response.end();
     }
+  }
+
+  protected runInternal(name: string, args: any) {
+    const [command, functionName] = name.split('.');
+    const target = this.config.commands.get(command);
+
+    if (!this.isValidCommand(target, command, functionName)) {
+      throw new Error('Invalid command invoked: ' + name);
+    }
+
+    return this.runCommand(target, command, functionName, args);
   }
 
   private writeAvailableCommands(response: ServerResponse) {
@@ -76,7 +87,7 @@ export class HttpServer {
 
   async serve() {
     const { apiHost, apiPort } = this.config.settings;
-    const server = createS12qerver((request, response) => this.run(request, response));
+    const server = createServer((request, response) => this.run(request, response));
 
     await this.runInitializers();
 
@@ -186,8 +197,8 @@ export class HttpServer {
     });
   }
 
-  protected isValidCommand(target: object | undefined, command: string, functionName: string) {
-    return target && command && functionName && typeof target[functionName] === 'function';
+  protected isValidCommand(functionMap: object | undefined, command: string, functionName: string) {
+    return functionMap && command && functionName && typeof functionMap[functionName] === 'function';
   }
 
   protected createNext() {
@@ -198,12 +209,13 @@ export class HttpServer {
     return { next, promise: out.promise };
   }
 
-  protected async runCommand(target: any, command: string, functionName: string, params: any) {
+  protected async runCommand(functionMap: any, command: string, functionName: string, params: any) {
     const moduleConfig = await this.config.loadModuleConfiguration(command);
     const optionFromFile = moduleConfig.commands?.[functionName] ?? {};
     const mergedOptions = Object.assign({}, params, optionFromFile);
+    const serverOptions = { run: (commandName: string, args: any) => this.runInternal(commandName, args) };
 
     Logger.debug(`Running command: ${command}.${functionName}`, mergedOptions);
-    return await target[functionName](mergedOptions);
+    return await functionMap[functionName](mergedOptions, serverOptions);
   }
 }

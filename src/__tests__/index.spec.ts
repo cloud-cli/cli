@@ -46,6 +46,7 @@ describe('CLI as a module', () => {
 
 describe('run initializers for a module', () => {
   let port = 3001;
+
   function setup() {
     const settings: Configuration = {
       key: 'key',
@@ -53,7 +54,8 @@ describe('run initializers for a module', () => {
         [init]: jest.fn(),
         foo: {
           [init]: jest.fn(),
-          tests() { },
+          calledFromTests: jest.fn((args, { run }) => run('foo.calledInternally', args)),
+          calledInternally: jest.fn(() => 'I was called internally'),
         }
       } as any,
       apiHost: 'localhost',
@@ -69,12 +71,27 @@ describe('run initializers for a module', () => {
     return { settings, config };
   }
 
+  it('runs a command on server side', async () => {
+    const { settings, config } = setup();
+    const cli = new CommandLineInterface(config);
+    const server: any = await cli.run(['--serve']);
+    const output = await cli.run(['foo.calledFromTests', '--foo', 'foo']);
+    server.close();
+
+    const serverParams = { run: expect.any(Function) };
+
+    expect(settings.default.foo.calledFromTests).toHaveBeenCalledWith({ foo: 'foo' }, serverParams);
+    expect(settings.default.foo.calledInternally).toHaveBeenCalledWith({ foo: 'foo' }, serverParams);
+
+    expect(output).toBe('I was called internally');
+  });
+
   it('runs the initializer when the server is started', async () => {
     const { settings, config } = setup();
     const cli = new CommandLineInterface(config);
     jest.spyOn(Logger, 'log').mockReturnValue(void 0);
 
-    const server = await cli.run(['--serve']);
+    const server: any = await cli.run(['--serve']);
     server.close();
 
     expect(Logger.log).toHaveBeenCalledWith('Started services at localhost:' + settings.apiPort + '.');
@@ -91,7 +108,7 @@ describe('run initializers for a module', () => {
     jest.spyOn(process, 'exit').mockImplementation();
 
     const cli = new CommandLineInterface(config);
-    const server = await cli.run(['--serve']);
+    const server: any = await cli.run(['--serve']);
     await cli.run(['--help']);
     server.close();
 
@@ -101,8 +118,9 @@ describe('run initializers for a module', () => {
 
     expect(Logger.log).toHaveBeenCalledWith('Usage: cy <command>.<subcommand> --option=value\nAvailable commands:\n');
     expect(Logger.log).toHaveBeenCalledWith('foo');
-    expect(Logger.log).toHaveBeenCalledWith('  ', 'tests');
-    expect(Logger.log).toHaveBeenCalledWith('\n\nExample:\n\n\tfoo.tests --foo "foo"');
+    expect(Logger.log).toHaveBeenCalledWith('  ', 'calledFromTests');
+    expect(Logger.log).toHaveBeenCalledWith('  ', 'calledInternally');
+    expect(Logger.log).toHaveBeenCalledWith('\n\nExample:\n\n\tfoo.calledFromTests --foo "foo"');
     expect(process.exit).toHaveBeenCalledWith(1);
   });
 
@@ -121,7 +139,7 @@ describe('run initializers for a module', () => {
     jest.spyOn(process, 'exit').mockImplementation();
 
     const cli = new CommandLineInterface(config);
-    const server = await cli.run(['--serve']);
+    const server: any = await cli.run(['--serve']);
     await cli.run(['--help']);
     server.close();
 
