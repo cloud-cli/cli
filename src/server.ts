@@ -4,6 +4,10 @@ import { CloudConfiguration } from './configuration';
 import { Logger } from './logger.js';
 import { init } from './constants.js';
 
+export interface ServerParams {
+  run(command: string, args: any): any;
+}
+
 export class HttpServer {
   constructor(private config: CloudConfiguration) { }
 
@@ -213,7 +217,10 @@ export class HttpServer {
     const moduleConfig = await this.config.loadModuleConfiguration(command);
     const optionFromFile = moduleConfig.commands?.[functionName] ?? {};
     const mergedOptions = Object.assign({}, params, optionFromFile);
-    const serverOptions = { run: (commandName: string, args: any) => this.runInternal(commandName, args) };
+
+    const serverOptions: ServerParams = {
+      run: (commandName: string, args: any) => this.runInternal(commandName, args)
+    };
 
     Logger.debug(`Running command: ${command}.${functionName}`, mergedOptions);
     return await functionMap[functionName](mergedOptions, serverOptions);

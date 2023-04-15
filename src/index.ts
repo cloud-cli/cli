@@ -3,6 +3,7 @@ import { CloudConfiguration, Configuration } from './configuration.js';
 import { EventEmitter } from 'node:events';
 
 export { init } from './constants.js';
+export type { ServerParams } from './server.js';
 
 export function run(command: string, args: unknown, config?: Configuration) {
   if (!config) {
