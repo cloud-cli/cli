@@ -1,4 +1,4 @@
-import { init } from '@cloud-cli/cli';
+import { init } from '../dist/index.js';
 
 const foo = {
   [init]() {
@@ -7,7 +7,7 @@ const foo = {
 
   test(params) {
     console.log('foo was called with', params);
-    return { foo: params };
+    return 'OK';
   },
 };
 
