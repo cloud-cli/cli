@@ -23,7 +23,7 @@ jobs:
           npm i @cloud-cli/cli @cloud-cli/sys
           pwd
           echo 'b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c' > key
-          CLI=./node_modules/.bin/cy
+          CLI=../node_modules/.bin/cy
           DEBUG=1 $CLI --serve &
           sleep 5
           $CLI
