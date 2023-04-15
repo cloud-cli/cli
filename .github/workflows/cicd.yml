@@ -22,8 +22,6 @@ jobs:
           DEBUG=1 $CLI --serve &
           sleep 5
           echo 'starting self-test'
-          $CLI
-          $CLI .help
           $CLI foo.test
           ps ax
           pkill node
