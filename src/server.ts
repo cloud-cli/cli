@@ -5,7 +5,7 @@ import { Logger } from './logger.js';
 import { init } from './constants.js';
 
 export interface ServerParams {
-  run(command: string, args: any): any;
+  run(command: string, args?: any): any;
 }
 
 export class HttpServer {
