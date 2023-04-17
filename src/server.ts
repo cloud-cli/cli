@@ -139,7 +139,7 @@ export class HttpServer {
     const initializer = this.config.commands.get(init) as unknown as Function | undefined;
     if (initializer) {
       Logger.log('Running server initializer');
-      initializer();
+      initializer(this.serverParams);
     }
   }
 
@@ -212,16 +212,17 @@ export class HttpServer {
     return { next, promise: out.promise };
   }
 
+  protected serverParams: ServerParams = {
+    run: (commandName: string, args: any) => this.runInternal(commandName, args)
+  };
+
   protected async runCommand(functionMap: any, command: string, functionName: string, params: any) {
     const moduleConfig = await this.config.loadModuleConfiguration(command);
     const optionFromFile = moduleConfig.commands?.[functionName] ?? {};
     const mergedOptions = Object.assign({}, params, optionFromFile);
 
-    const serverOptions: ServerParams = {
-      run: (commandName: string, args: any) => this.runInternal(commandName, args)
-    };
-
     Logger.debug(`Running command: ${command}.${functionName}`, mergedOptions);
-    return await functionMap[functionName](mergedOptions, serverOptions);
+    
+    return await functionMap[functionName](mergedOptions, this.serverParams);
   }
 }
