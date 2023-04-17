@@ -122,13 +122,6 @@ export class HttpServer {
   }
 
   private async runInitializers() {
-    const initializer = this.config.commands.get(init) as unknown as Function | undefined;
-
-    if (initializer) {
-      Logger.log('Running general initializers.');
-      initializer();
-    }
-
     const modules = Array.from(this.config.commands.entries());
     for (const [command, object] of modules) {
       if (command !== init && object && typeof object === 'object' && object[init]) {
@@ -141,6 +134,12 @@ export class HttpServer {
           Logger.log('FAILED: ' + String(error));
         }
       }
+    }
+
+    const initializer = this.config.commands.get(init) as unknown as Function | undefined;
+    if (initializer) {
+      Logger.log('Running server initializer');
+      initializer();
     }
   }
 
