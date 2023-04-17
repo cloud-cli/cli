@@ -94,10 +94,9 @@ describe('run initializers for a module', () => {
     const server: any = await cli.run(['--serve']);
     server.close();
 
-    expect(Logger.log).toHaveBeenNthCalledWith(1, 'Found 0 modules');
-    expect(Logger.log).toHaveBeenNthCalledWith(2, 'Running initializers for foo');
-    expect(Logger.log).toHaveBeenNthCalledWith(3, 'Running server initializer');
-    expect(Logger.log).toHaveBeenNthCalledWith(4, 'Started services at localhost:' + settings.apiPort + '.');
+    expect(Logger.log).toHaveBeenCalledWith('Running initializers for foo');
+    expect(Logger.log).toHaveBeenCalledWith('Running server initializer');
+    expect(Logger.log).toHaveBeenCalledWith('Started services at localhost:' + settings.apiPort + '.');
 
     expect(settings.default[init]).toHaveBeenCalled();
   });
