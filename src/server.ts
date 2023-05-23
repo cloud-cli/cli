@@ -18,7 +18,7 @@ export class HttpServer {
       return;
     }
 
-    const remoteKey = request.headers.authorization;
+    const remoteKey = String(request.headers.authorization).replace('Bearer', '').trim();
 
     if (this.config.settings.key !== remoteKey) {
       Logger.debug('Invalid key', remoteKey, this.config.settings.key);
@@ -222,7 +222,7 @@ export class HttpServer {
     const mergedOptions = Object.assign({}, params, optionFromFile);
 
     Logger.debug(`Running command: ${command}.${functionName}`, mergedOptions);
-    
+
     return await functionMap[functionName](mergedOptions, this.serverParams);
   }
 }
