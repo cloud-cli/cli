@@ -80,8 +80,8 @@ export class CliCommand {
         return this.readFileReferences(value as any);
       }
 
-      if (String(value).startsWith('@')) {
-        params[key] = readFileSync(String(value).slice(1), { encoding: 'utf-8' });
+      if (String(value).startsWith('@file:')) {
+        params[key] = readFileSync(String(value).slice(6), { encoding: 'utf-8' });
       }
     });
   }
