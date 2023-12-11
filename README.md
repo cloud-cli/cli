@@ -17,10 +17,9 @@ Then you can install the Cloudy CLI and create a server.
 
 ### 1. Set up the server
 
-```bash
-# install Cloudy CLI
-npm i -g @cloud-cli/cloudy
+> Tip: create an alias for Cloudy CLI. Add this to `~/.profile`: `alias cy="npx @cloud-cli/cli"`
 
+```bash
 # generate a random key
 head -c 5000 /dev/urandom | sha512sum
 echo '[paste-the-generated-key-here]' > key
@@ -34,13 +33,13 @@ import foo from 'foo';
 import { init } from '@cloud-cli/cli';
 
 function initialize() {
-  // anything you need to run when the http server starts
+  // anything you need to run when the command server starts
 }
 
 // export commands from plugins
 export default { foo, [init]: initialize };
 
-// optional, change remote port
+// optional, change remote port and host
 export const apiPort = 1234;
 export const apiHost = '0.0.0.0';
 ```
@@ -48,18 +47,12 @@ export const apiHost = '0.0.0.0';
 And then we start the Cloudy server:
 
 ```bash
-cy --serve
+npx @cloud-cli/cli --serve
 ```
 
 ## 2. Set up the local CLI
 
-On your local machine, install the CLI and create a configuration file again:
-
-```bash
-# install Cloudy CLI
-npm i -g @cloud-cli/cloudy
-```
-
+On your local machine, create a configuration file again:
 
 ```ts
 // cloudy.conf.mjs
@@ -73,7 +66,7 @@ export const key = '[paste-the-generated-key-here]';
 
 And that's it!
 
-Now you can run `cy --help` to get a list of commands available.
+Now you can run `npx @cloud-cli/cli --help` to get a list of commands available.
 
 ## How it works
 
