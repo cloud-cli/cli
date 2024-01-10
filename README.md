@@ -2,13 +2,36 @@
 
 ## What is cloudy?
 
-Cloudy is a Node.JS module that works both as an API and a CLI tool, used to automate the deploy and configuration of multiple services on a remote machine.
+Cloudy is a both an HTTP server and a CLI tool, used to run commands on a remote machine using plugins.
 
-## Concept
+So what?
 
-You install the CLI once, point it to a server that also has the tool running, and the available commands are driven by the server.
+Well, not any commands... You write a script that exports a few functions in an object and Cloudy takes care of exposing it as an API.
 
-On the server side, you run the same tool as an HTTP API.
+Here's an example:
+
+```js
+export default {
+  greeting: {
+    sayHi() {
+      return 'Hello!';
+    }
+  }
+}
+```
+
+And here's what the CLI can do:
+
+```bash
+cy greeting.sayHi
+> Hello!
+```
+
+## Concepts
+
+You install the CLI locally, point it to a server and run remote commands.
+
+On the server side, you run the same CLI, but as an HTTP API.
 
 ## Getting Started
 
@@ -29,7 +52,7 @@ Next, let's create a configuration file called `cloudy.conf.mjs` on the server:
 
 ```ts
 // import your plugins
-import foo from 'foo';
+import foo from 'foo-plugin';
 import { init } from '@cloud-cli/cli';
 
 function initialize() {
