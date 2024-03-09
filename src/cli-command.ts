@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { readFileSync } from 'node:fs';
 import yargs from 'yargs';
 import { CloudConfiguration, Configuration } from './configuration.js';
 import { Logger } from './logger.js';
