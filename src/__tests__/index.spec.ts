@@ -3,6 +3,7 @@ import { createServer } from 'http';
 import { CloudConfiguration, Configuration } from '../configuration.js';
 import { CommandLineInterface } from '../cli.js';
 import { Logger } from '../logger.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 describe('init symbol', () => {
   it('should export a symbol for cloud initializers', () => {
@@ -11,36 +12,71 @@ describe('init symbol', () => {
 });
 
 describe('CLI as a module', () => {
-  it('should call a remote server', async () => {
-    const serverCalls = [];
-    const port = 3000;
-    const server = createServer((req, res) => {
+  const port = 3000;
+  let server;
+  let receivedCalls = [];
+
+  const config: Configuration = {
+    key: 'key',
+    default: {} as any,
+    apiHost: 'localhost',
+    apiPort: port,
+    remoteHost: 'http://localhost',
+  };
+
+  beforeEach(() => {
+    receivedCalls = [];
+    server = createServer((req, res) => {
+      if (req.url === '/command.fail') {
+        res.writeHead(400);
+        res.end('');
+        return;
+      }
+
       const body = [];
-      req.on('data', c => body.push(c));
+      req.on('data', (c) => body.push(c));
       req.on('end', () => {
-        serverCalls.push([req, Buffer.concat(body).toString('utf8'), res])
+        receivedCalls.push([req, Buffer.concat(body).toString('utf8'), res]);
       });
-      res.end('');
+      res.end('{}');
     });
-
-    const config: Configuration = {
-      key: 'key',
-      default: {} as any,
-      apiHost: 'localhost',
-      apiPort: port,
-      remoteHost: 'http://localhost',
-    };
-
     server.listen(port);
-    await run('command.name', { foo: true }, config);
+  });
 
-    server.close();
-    expect(serverCalls.length).toBe(1);
+  afterEach(() => server.close());
 
-    const [request, body] = serverCalls[0];
+  it('should call a remote server', async () => {
+    await expect(run('command.name', { foo: true }, config)).resolves.toEqual({});
+    expect(receivedCalls.length).toBe(1);
+    const [request, body] = receivedCalls[0];
     expect(request.url).toBe('/command.name');
     expect(request.method).toBe('POST');
+    expect(request.headers.authorization).toBe('key');
     expect(JSON.parse(body)).toEqual({ foo: true });
+  });
+
+  it('should catch errors from server call', async () => {
+    await expect(run('command.fail', { foo: true }, config)).rejects.toEqual('400: Bad Request');
+  });
+
+  it('should catch connnection errors', async () => {
+    await expect(run('command.fail', {}, { ...config, apiPort: 12345 })).rejects.toEqual(
+      new Error('Failed to connect to server'),
+    );
+  });
+
+  it('should read authorization key from a file', async () => {
+    process.env.HOME = process.cwd() + '/src/__tests__/withoutKey';
+    await expect(run('command.keyFromFile', {})).resolves.toEqual({});
+    const [request] = receivedCalls[0];
+    expect(request.headers.authorization).toBe('test-key');
+  });
+
+  it('should read configuration from a file', async () => {
+    process.env.HOME = process.cwd() + '/src/__tests__/withKey';
+    await expect(run('command.keyFromFile', {})).resolves.toEqual({});
+    const [request] = receivedCalls[0];
+    expect(request.headers.authorization).toBe('testKeyFromFile');
   });
 });
 
@@ -51,12 +87,12 @@ describe('run initializers for a module', () => {
     const settings: Configuration = {
       key: 'key',
       default: {
-        [init]: jest.fn(),
+        [init]: vi.fn(),
         foo: {
-          [init]: jest.fn(),
-          calledFromTests: jest.fn((args, { run }) => run('foo.calledInternally', args)),
-          calledInternally: jest.fn(() => 'I was called internally'),
-        }
+          [init]: vi.fn(),
+          calledFromTests: vi.fn((args, { run }) => run('foo.calledInternally', args)),
+          calledInternally: vi.fn(() => 'I was called internally'),
+        },
       } as any,
       apiHost: 'localhost',
       apiPort: port++,
@@ -66,7 +102,7 @@ describe('run initializers for a module', () => {
     const config = new CloudConfiguration();
     config.settings = settings;
     config.importCommands(settings.default);
-    jest.spyOn(config, 'loadCloudConfiguration').mockImplementation(async () => { });
+    vi.spyOn(config, 'loadCloudConfiguration').mockImplementation(async () => {});
 
     return { settings, config };
   }
@@ -89,7 +125,7 @@ describe('run initializers for a module', () => {
   it('runs the initializer when the server is started', async () => {
     const { settings, config } = setup();
     const cli = new CommandLineInterface(config);
-    jest.spyOn(Logger, 'log').mockReturnValue(void 0);
+    vi.spyOn(Logger, 'log').mockReturnValue(void 0);
 
     const server: any = await cli.run(['--serve']);
     server.close();
@@ -104,8 +140,8 @@ describe('run initializers for a module', () => {
   it('runs print a help text and exit when "--help" is given as the only argument', async () => {
     const { settings, config } = setup();
 
-    jest.spyOn(Logger, 'log').mockReturnValue(void 0);
-    jest.spyOn(process, 'exit').mockImplementation();
+    vi.spyOn(Logger, 'log').mockReturnValue(void 0);
+    vi.spyOn(process, 'exit').mockReturnValue(0 as never);
 
     const cli = new CommandLineInterface(config);
     const server: any = await cli.run(['--serve']);
@@ -133,9 +169,9 @@ describe('run initializers for a module', () => {
       remoteHost: 'http://localhost',
     };
 
-    jest.spyOn(config, 'loadCloudConfiguration').mockImplementation(async () => { });
-    jest.spyOn(Logger, 'log').mockReturnValue(void 0);
-    jest.spyOn(process, 'exit').mockImplementation();
+    vi.spyOn(config, 'loadCloudConfiguration').mockImplementation(async () => {});
+    vi.spyOn(Logger, 'log').mockReturnValue(void 0);
+    vi.spyOn(process, 'exit').mockReturnValue(0 as never);
 
     const cli = new CommandLineInterface(config);
     const server: any = await cli.run(['--serve']);
@@ -144,16 +180,16 @@ describe('run initializers for a module', () => {
 
     expect(Logger.log).toHaveBeenCalledWith('No commands available.');
     expect(process.exit).toHaveBeenCalledWith(1);
-  })
+  });
 });
 
 describe('events', () => {
   it('should have an event emitter for modules to communicate', () => {
-    const spy = jest.fn();
-    const foo = { foo: true }
+    const spy = vi.fn();
+    const foo = { foo: true };
     events.on('test', spy);
     events.emit('test', foo);
 
     expect(spy).toHaveBeenCalledWith(foo);
   });
-})
+});

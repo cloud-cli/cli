@@ -1,12 +1,10 @@
 import { readFileSync } from 'fs';
-import { ClientRequest, request } from 'http';
-import { request as httpsRequest } from 'https';
 import yargs from 'yargs';
 import { CloudConfiguration, Configuration } from './configuration.js';
 import { Logger } from './logger.js';
 
 export class CliCommand {
-  constructor(private config: CloudConfiguration) { }
+  constructor(private config: CloudConfiguration) {}
 
   async run(args: string[]) {
     const [command, ...params] = args;
@@ -18,51 +16,28 @@ export class CliCommand {
   async callServer(command: string, args: Record<string, any>, config: Configuration) {
     const { apiPort, remoteHost, key } = config;
     const url = new URL(`${remoteHost}:${apiPort}/${command}`);
-    const fn = url.protocol === 'https:' ? httpsRequest : request;
     const headers = {
       'content-type': 'application/json',
-      authorization: key
+      authorization: key,
     };
 
-    let remote: ClientRequest;
-
     try {
-      remote = fn(url, {
+      const request = await fetch(url, {
         method: 'POST',
         headers,
+        body: JSON.stringify(args),
       });
+
+      if (!request.ok) {
+        return Promise.reject(`${request.status}: ${request.statusText}`);
+      }
+
+      return request.json();
     } catch (error) {
       Logger.log('Failed to connect to server');
-      Logger.debug(error.message);
-
-      return Promise.reject(error);
+      Logger.debug(error);
+      return Promise.reject(new Error('Failed to connect to server'));
     }
-
-    return new Promise((resolve, reject) => {
-      remote.on('response', (response) => {
-        const chunks: Buffer[] = [];
-
-        if (response.statusCode !== 200) {
-          Logger.log(`${response.statusCode}: ${response.statusMessage}\n\n`);
-        }
-
-        response.on('error', reject);
-        response.on('data', (chunk) => chunks.push(chunk));
-        response.on('end', () => {
-          const body = Buffer.concat(chunks).toString('utf-8');
-
-          try {
-            resolve(JSON.parse(body));
-          } catch (error) {
-            resolve(body);
-          }
-        });
-      });
-
-      remote.on('error', reject);
-      remote.write(JSON.stringify(args));
-      remote.end();
-    });
   }
 
   protected parseParamsFromCli(input: string[]) {

@@ -5,10 +5,10 @@ import { EventEmitter } from 'node:events';
 export { init } from './constants.js';
 export type { ServerParams } from './server.js';
 
-export function run(command: string, args: unknown, config?: Configuration) {
+export async function run(command: string, args: unknown, config?: Configuration) {
   if (!config) {
     const loader = new CloudConfiguration();
-    loader.loadCloudConfiguration();
+    await loader.loadCloudConfiguration();
     config = loader.settings;
   }
 

@@ -1,5 +1,4 @@
-import { createServer, IncomingMessage, request, ServerResponse, Server } from 'http';
-import { request as httpsRequest } from 'https';
+import { createServer, IncomingMessage, ServerResponse, Server } from 'http';
 import { CloudConfiguration } from './configuration';
 import { Logger } from './logger.js';
 import { init } from './constants.js';
@@ -9,7 +8,7 @@ export interface ServerParams {
 }
 
 export class HttpServer {
-  constructor(private config: CloudConfiguration) { }
+  constructor(private config: CloudConfiguration) {}
 
   async run(request: IncomingMessage & { body?: any }, response: ServerResponse) {
     if (request.method !== 'POST' && request.method !== 'GET') {
@@ -95,7 +94,7 @@ export class HttpServer {
 
     await this.runInitializers();
 
-    return new Promise<Server>(resolve => {
+    return new Promise<Server>((resolve) => {
       server.on('listening', () => resolve(server));
       server.listen(apiPort, apiHost);
       Logger.log(`Started services at ${apiHost}:${apiPort}.`);
@@ -104,7 +103,6 @@ export class HttpServer {
 
   private parseBody(request: IncomingMessage): Promise<object> {
     return new Promise((resolve, reject) => {
-
       const chunks = [];
       request.on('data', (c) => chunks.push(c));
       request.on('end', () => {
@@ -154,7 +152,6 @@ export class HttpServer {
 
     Logger.log('Usage: cy <command>.<subcommand> --option=value\nAvailable commands:\n');
 
-
     entries.forEach((entry) => {
       const [command, subcommands] = entry;
       Logger.log(command);
@@ -168,36 +165,17 @@ export class HttpServer {
     process.exit(1);
   }
 
-  protected async fetchCommands(): Promise<Record<string, string[]>> {
-    return new Promise((resolve, reject) => {
-      const { apiPort, remoteHost, key } = this.config.settings;
-      const url = new URL(`${remoteHost}:${apiPort}/`);
-      const headers = { authorization: key };
-      const fn = url.protocol === 'https:' ? httpsRequest : request;
-      const remote = fn(url, { headers });
+  protected async fetchCommands() {
+    const { apiPort, remoteHost, key } = this.config.settings;
+    const url = new URL(`${remoteHost}:${apiPort}/`);
+    const headers = { authorization: key };
+    const remote = await fetch(url, { headers });
 
-      remote.on('response', (response) => {
-        const chunks: Buffer[] = [];
+    if (!remote.ok) {
+      Logger.debug(`Fetch command returned ${remote.status}: ${remote.statusText}`);
+    }
 
-        if (response.statusCode !== 200) {
-          Logger.debug(`Fetch command returned ${response.statusCode}: ${response.statusMessage}`);
-        }
-
-        response.on('error', reject);
-        response.on('data', (chunk) => chunks.push(chunk));
-        response.on('end', () => {
-          const body = Buffer.concat(chunks).toString('utf-8');
-          try {
-            resolve(JSON.parse(body));
-          } catch {
-            resolve({});
-          }
-        });
-      });
-
-      remote.on('error', reject);
-      remote.end();
-    });
+    return (await remote.json()) as Record<string, string[]>;
   }
 
   protected isValidCommand(functionMap: object | undefined, command: string, functionName: string) {
@@ -213,7 +191,7 @@ export class HttpServer {
   }
 
   protected serverParams: ServerParams = {
-    run: (commandName: string, args: any) => this.runInternal(commandName, args)
+    run: (commandName: string, args: any) => this.runInternal(commandName, args),
   };
 
   protected async runCommand(functionMap: any, command: string, functionName: string, params: any) {

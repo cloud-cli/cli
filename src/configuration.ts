@@ -31,9 +31,9 @@ export class CloudConfiguration {
   settings: Configuration;
 
   async loadCloudConfiguration(): Promise<void> {
-    const filePath = join(process.cwd(), 'cloudy.conf.mjs');
+    const filePath = this.findConfigurationFile();
 
-    if (!existsSync(filePath)) {
+    if (!filePath) {
       Logger.log(`Configuration file not found at ${filePath}`);
       this.settings = defaults as Configuration;
       return;
@@ -60,9 +60,9 @@ export class CloudConfiguration {
 
   async autoLoadModules() {
     const tools = (this.settings.default || {}) as CommandTree;
-    const pkg = await readFile(join(process.cwd(), 'package.json'), 'utf8');
+    const pkg = await import(join(process.cwd(), 'package.json'), { assert: { type: 'json' } });
     const prefix = '@cloud-cli/';
-    const modules = Object.keys(JSON.parse(pkg).dependencies || {}).filter((k) => k.startsWith(prefix));
+    const modules = Object.keys(pkg.dependencies || {}).filter((k) => k.startsWith(prefix));
 
     Logger.debug(`Found ${modules.length} modules`);
 
@@ -81,18 +81,24 @@ export class CloudConfiguration {
     this.importCommands(tools);
   }
 
+  private findConfigurationFile() {
+    const candidates = [join(process.cwd(), 'cloudy.conf.mjs'), join(process.env.HOME, 'cloudy.conf.mjs')];
+
+    for (const filePath of candidates) {
+      if (existsSync(filePath)) {
+        console.log(filePath);
+        return filePath;
+      }
+    }
+
+    return '';
+  }
+
   private async loadKey() {
-    if (this.settings.key) {
-      return;
-    }
-
     const keyPath = join(process.cwd(), 'key');
-
-    if (!existsSync(keyPath)) {
-      throw new Error(`Key not found at ${keyPath}`);
+    if (!this.settings.key && existsSync(keyPath)) {
+      this.settings.key = (await readFile(keyPath, 'utf-8')).trim();
     }
-
-    this.settings.key = (await readFile(keyPath, 'utf-8')).trim();
   }
 
   async loadModuleConfiguration(moduleName: string): Promise<ModuleConfiguration> {
@@ -100,7 +106,8 @@ export class CloudConfiguration {
 
     try {
       if (existsSync(filePath)) {
-        return (await this.readAndParse(filePath)) as ModuleConfiguration;
+        const config = await readFile(filePath, 'utf-8');
+        return JSON.parse(config) as ModuleConfiguration;
       }
     } catch (error) {
       Logger.log(`Invalid configuration file for ${moduleName}: ${error.message}`);
