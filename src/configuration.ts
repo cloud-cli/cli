@@ -83,11 +83,17 @@ export class CloudConfiguration {
   }
 
   private findConfigurationFile() {
-    const candidates = [join(process.cwd(), 'cloudy.conf.mjs'), join(process.env.HOME, 'cloudy.conf.mjs')];
+    const candidates = [
+      join(process.cwd(), 'cloudy.conf.mjs'),
+      '~/cloudy.conf.mjs',
+    ];
+
+    if (process.env.HOME) {
+      candidates.push(join(process.env.HOME, 'cloudy.conf.mjs'));
+    }
 
     for (const filePath of candidates) {
       if (existsSync(filePath)) {
-        console.log(filePath);
         return filePath;
       }
     }
