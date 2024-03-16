@@ -61,8 +61,9 @@ export class CloudConfiguration {
   async autoLoadModules() {
     const tools = (this.settings.default || {}) as CommandTree;
     const pkg = await import(join(process.cwd(), 'package.json'), { assert: { type: 'json' } });
+    const dependencies = pkg.default.dependencies || {};
     const prefix = '@cloud-cli/';
-    const modules = Object.keys(pkg.dependencies || {}).filter((k) => k.startsWith(prefix));
+    const modules = Object.keys(dependencies).filter((k) => k.startsWith(prefix));
 
     Logger.debug(`Found ${modules.length} modules`);
 
