@@ -26,7 +26,7 @@ export async function run(command: string, args: Args = null) {
 
 export async function auth(key: string) {
   headers.authorization = "Bearer " + key;
-  const request = await fetch(".help", { method: "POST", headers });
+  const request = await fetch(new URL(".help", baseURL), { method: "POST", headers });
 
   if (!request.ok) {
     throw new Error("Unauthorized");
