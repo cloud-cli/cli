@@ -11,7 +11,7 @@ export interface ServerParams {
 async function getClientJs(request: IncomingMessage) {
   const file = import.meta.resolve('./client.mjs');
   const source = await readFile(file, 'utf-8');
-  return source.replace('__API_BASEURL__', String(request.headers['x-forwarded-for']));
+  return source.replace('__API_BASEURL__', 'https://' + String(request.headers['x-forwarded-for']));
 }
 
 export class HttpServer {
