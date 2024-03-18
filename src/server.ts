@@ -19,7 +19,10 @@ export class HttpServer {
 
   async run(request: IncomingMessage & { body?: any }, response: ServerResponse) {
     if (request.method === 'GET' && request.url === '/index.mjs' ) {
-      response.writeHead(200, { 'content-type': 'application/json' });
+      response.writeHead(200, {
+        'Content-Type': 'text/javascript',
+        'Access-Control-Allow-Origin': '*'
+      });
       response.end(await getClientJs(request));
       return;
     }
