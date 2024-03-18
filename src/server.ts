@@ -9,7 +9,7 @@ export interface ServerParams {
 }
 
 async function getClientJs(request: IncomingMessage) {
-  const file = import.meta.resolve('./client.mjs');
+  const file = import.meta.resolve('./client.mjs').slice(7);
   const source = await readFile(file, 'utf-8');
   return source.replace('__API_BASEURL__', 'https://' + String(request.headers['x-forwarded-for']));
 }
