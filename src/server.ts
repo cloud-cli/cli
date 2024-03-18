@@ -186,7 +186,7 @@ export class HttpServer {
     const { apiPort, remoteHost, key } = this.config.settings;
     const url = new URL(`${remoteHost}:${apiPort}/`);
     const headers = { authorization: key };
-    const remote = await fetch(url, { headers });
+    const remote = await fetch(url, { method: 'POST', headers });
 
     if (!remote.ok) {
       Logger.debug(`Fetch command returned ${remote.status}: ${remote.statusText}`);
