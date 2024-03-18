@@ -1,5 +1,6 @@
-import { createServer, IncomingMessage, ServerResponse, Server } from 'http';
-import { CloudConfiguration } from './configuration';
+import { readFile } from 'node:fs/promises';
+import { createServer, IncomingMessage, ServerResponse, Server } from 'node:http';
+import { CloudConfiguration } from './configuration.js';
 import { Logger } from './logger.js';
 import { init } from './constants.js';
 
@@ -7,17 +8,28 @@ export interface ServerParams {
   run(command: string, args?: any): any;
 }
 
+async function getClientJs(request: IncomingMessage) {
+  const source = await readFile('./client.mjs', 'utf-8');
+  return source.replace('__API_BASEURL__', String(request.headers['x-forwarded-for']));
+}
+
 export class HttpServer {
   constructor(private config: CloudConfiguration) {}
 
   async run(request: IncomingMessage & { body?: any }, response: ServerResponse) {
-    if (request.method !== 'POST' && request.method !== 'GET') {
-      response.writeHead(405, 'Invalid request');
+    if (request.method === 'GET' && request.url === '/index.mjs' ) {
+      response.writeHead(200, { 'content-type': 'application/json' });
+      response.end(await getClientJs(request));
+      return;
+    }
+
+    if (request.method !== 'POST') {
+      response.writeHead(405, 'Invalid method');
       response.end();
       return;
     }
 
-    const remoteKey = String(request.headers.authorization).replace('Bearer', '').trim();
+    const remoteKey = String(request.headers.authorization.toLowerCase()).replace('Bearer', '').trim();
 
     if (this.config.settings.key !== remoteKey) {
       Logger.debug('Invalid key', remoteKey, this.config.settings.key);
@@ -35,7 +47,7 @@ export class HttpServer {
     }
 
     const functionMap = this.config.commands.get(command);
-    if (!this.isValidCommand(functionMap, command, functionName) || request.method !== 'POST') {
+    if (!this.isValidCommand(functionMap, command, functionName)) {
       response.writeHead(400, 'Bad command, function or options. Try cy .help for options');
       this.writeAvailableCommands(response);
       return;
@@ -67,8 +79,8 @@ export class HttpServer {
     return this.runCommand(target, command, functionName, args);
   }
 
-  private writeAvailableCommands(response: ServerResponse) {
-    const help = {};
+  private getAvailableCommands() {
+    const help: Record<string, string[]> = {};
 
     this.config.commands.forEach((object, command) => {
       if (command === init || !(object && typeof object === 'object')) {
@@ -78,13 +90,18 @@ export class HttpServer {
       help[command] = [];
 
       const properties = Object.getOwnPropertyNames(object);
-      properties.forEach((name) => {
-        if (name !== 'constructor' && typeof object[name] === 'function') {
-          help[command].push(name);
-        }
-      });
+      const commands = properties.filter((name) => (name !== 'constructor' && typeof object[name] === 'function'));
+
+      if (commands.length) {
+        help[command] = commands;
+      }
     });
 
+    return help;
+  }
+
+  private writeAvailableCommands(response: ServerResponse) {
+    const help = this.getAvailableCommands();
     response.end(JSON.stringify(help, null, 2));
   }
 
