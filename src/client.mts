@@ -1,6 +1,7 @@
 const baseURL = "__API_BASEURL__";
 const headers = { authorization: "" };
 const cloud: CloudCommands = {};
+const fetchOptions: any = { method: "POST", headers, mode: "cors" };
 
 type Args = Record<string, string> | null;
 type Commands = Record<string, string[]>;
@@ -10,12 +11,10 @@ export async function run(command: string, args: Args = null) {
   const url = new URL(command, baseURL);
 
   if (args) {
-    Object.entries(args).forEach(([key, value]) =>
-      url.searchParams.set(key, value)
-    );
+    Object.entries(args).forEach(([key, value]) => url.searchParams.set(key, value));
   }
 
-  const response = await fetch(url, { method: "POST", headers });
+  const response = await fetch(url, fetchOptions);
 
   if (response.ok) {
     return await response.json();
@@ -26,7 +25,7 @@ export async function run(command: string, args: Args = null) {
 
 export async function auth(key: string) {
   headers.authorization = "Bearer " + key;
-  const request = await fetch(new URL(".help", baseURL), { method: "POST", headers });
+  const request = await fetch(new URL(".help", baseURL), fetchOptions);
 
   if (!request.ok) {
     throw new Error("Unauthorized");
