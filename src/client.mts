@@ -31,7 +31,7 @@ export async function auth(key: string) {
     throw new Error("Unauthorized");
   }
 
-  const commands: Commands = await request.json();
+  const commands = (await request.json()) as Commands;
   const list = Object.entries(commands);
 
   for (const [root, leaves] of list) {
