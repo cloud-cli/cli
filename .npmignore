@@ -6,3 +6,4 @@ jasmine.json
 .github
 tsconfig.json
 jest.config.*
+key
