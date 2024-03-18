@@ -1,9 +1,10 @@
 const baseURL = "__API_BASEURL__";
 const headers = { authorization: "" };
-const cloud = {};
+const cloud: CloudCommands = {};
 
 type Args = Record<string, string> | null;
 type Commands = Record<string, string[]>;
+type CloudCommands = Record<string, { [k: string]: (args?: Args) => Promise<unknown>; }>;
 
 export async function run(command: string, args: Args = null) {
   const url = new URL(command, baseURL);
