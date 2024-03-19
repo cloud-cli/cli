@@ -24,7 +24,7 @@ export async function run(command: string, args: Args = null) {
 }
 
 export async function auth(key: string) {
-  headers.Authorization = "Bearer " + key;
+  headers.Authorization = key;
   const request = await fetch(new URL(".help", baseURL), fetchOptions);
 
   if (!request.ok) {
