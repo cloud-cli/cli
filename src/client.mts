@@ -1,5 +1,5 @@
 const baseURL = "__API_BASEURL__";
-const headers = { authorization: "" };
+const headers = { Authorization: "" };
 const cloud: CloudCommands = {};
 const fetchOptions: any = { method: "POST", headers, mode: "cors" };
 
@@ -24,7 +24,7 @@ export async function run(command: string, args: Args = null) {
 }
 
 export async function auth(key: string) {
-  headers.authorization = "Bearer " + key;
+  headers.Authorization = "Bearer " + key;
   const request = await fetch(new URL(".help", baseURL), fetchOptions);
 
   if (!request.ok) {
