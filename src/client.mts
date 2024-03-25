@@ -9,12 +9,16 @@ type CloudCommands = Record<string, { [k: string]: (args?: Args) => Promise<unkn
 
 export async function run(command: string, args: Args = null) {
   const url = new URL(command, baseURL);
+  const options = {
+    ...fetchOptions,
+    body: '{}',
+  };
 
   if (args) {
-    Object.entries(args).forEach(([key, value]) => url.searchParams.set(key, value));
+    options.body = JSON.stringify(args);
   }
 
-  const response = await fetch(url, fetchOptions);
+  const response = await fetch(url, options);
 
   if (response.ok) {
     return await response.json();
