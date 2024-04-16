@@ -42,7 +42,7 @@ export class CliCommand {
 
   protected parseParamsFromCli(input: string[]) {
     const { argv } = yargs(input);
-    const { _, $0, ...params } = argv;
+    const { $0, ...params } = argv;
 
     this.readFileReferences(params);
 
