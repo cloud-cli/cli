@@ -1,10 +1,9 @@
-import { events, init, run } from '../index.js';
-import { createServer } from 'http';
-import { CloudConfiguration, Configuration } from '../configuration.js';
+import { describe, expect, it, vi } from 'vitest';
 import { CommandLineInterface } from '../clients/cli.js';
-import { Logger } from '../logger.js';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { CloudConfiguration, Configuration } from '../configuration.js';
 import { HttpServer } from '../http-server.js';
+import { init } from '../index.js';
+import { Logger } from '../logger.js';
 
 describe('http server', () => {
   let port = 3001;
