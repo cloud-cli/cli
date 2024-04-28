@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { createServer, IncomingMessage, ServerResponse, Server } from 'node:http';
-import { CloudConfiguration } from './configuration.js';
+import { CloudConfiguration, getConfig } from './configuration.js';
 import { Logger } from './logger.js';
 import { init } from './constants.js';
 
@@ -145,7 +145,7 @@ export class HttpServer {
     for (const [command, object] of modules) {
       if (command !== init && object && typeof object === 'object' && object[init]) {
         Logger.log('Running initializers for ' + command);
-        const config = await this.config.loadModuleConfiguration(command);
+        const config = await getConfig(command);
 
         try {
           await object[init](config);
@@ -160,43 +160,6 @@ export class HttpServer {
       Logger.log('Running server initializer');
       initializer(this.serverParams);
     }
-  }
-
-  async showHelpAndExit() {
-    const commands = await this.fetchCommands();
-    const entries = Object.entries(commands);
-
-    if (!(commands && entries.length)) {
-      Logger.log('No commands available.');
-      process.exit(1);
-    }
-
-    Logger.log('Usage: cy <command>.<subcommand> --option=value\nAvailable commands:\n');
-
-    entries.forEach((entry) => {
-      const [command, subcommands] = entry;
-      Logger.log(command);
-      subcommands.forEach((name) => Logger.log('  ', name));
-    });
-
-    if (entries.length) {
-      Logger.log(`\n\nExample:\n\n\t${entries[0][0]}.${entries[0][1][0]} --foo "foo"`);
-    }
-
-    process.exit(1);
-  }
-
-  protected async fetchCommands() {
-    const { apiPort, remoteHost, key } = this.config.settings;
-    const url = new URL(`${remoteHost}:${apiPort}/`);
-    const headers = { authorization: key };
-    const remote = await fetch(url, { method: 'POST', headers });
-
-    if (!remote.ok) {
-      Logger.debug(`Fetch command returned ${remote.status}: ${remote.statusText}`);
-    }
-
-    return (await remote.json()) as Record<string, string[]>;
   }
 
   protected isValidCommand(functionMap: object | undefined, command: string, functionName: string) {
@@ -216,7 +179,7 @@ export class HttpServer {
   };
 
   protected async runCommand(functionMap: any, command: string, functionName: string, params: any) {
-    const moduleConfig = await this.config.loadModuleConfiguration(command);
+    const moduleConfig = await getConfig(command);
     const optionFromFile = moduleConfig.commands?.[functionName] ?? {};
     const mergedOptions = Object.assign({}, params, optionFromFile);
 

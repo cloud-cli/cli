@@ -3,9 +3,17 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Logger } from './logger.js';
 import { init } from './constants.js';
+import { readJson } from './utils.js';
 
-export type CallableCommands = Record<string | typeof init, Function>;
-export type CommandTree = Record<string | typeof init, CallableCommands>;
+export type CallableCommands = {
+  [init]?: Function;
+  [k: string]: Function;
+};
+
+export type CommandTree = {
+  [init]?: Function;
+  [k: string]: CallableCommands;
+};
 
 export interface ModuleConfiguration {
   commands?: Record<string, object>;
@@ -27,14 +35,30 @@ const defaults: Partial<Configuration> = {
 };
 
 export class CloudConfiguration {
-  commands = new Map<string | typeof init, CallableCommands>();
+  commands = new Map<string | typeof init, CallableCommands | Function>();
   settings: Configuration;
 
+  static findFile() {
+    const candidates = [join(process.cwd(), 'cloudy.conf.mjs'), '~/cloudy.conf.mjs'];
+
+    if (process.env.HOME) {
+      candidates.push(join(process.env.HOME, 'cloudy.conf.mjs'));
+    }
+
+    for (const filePath of candidates) {
+      if (existsSync(filePath)) {
+        return filePath;
+      }
+    }
+
+    return '';
+  }
+
   async loadCloudConfiguration(): Promise<void> {
-    const filePath = this.findConfigurationFile();
+    const filePath = CloudConfiguration.findFile();
 
     if (!filePath) {
-      Logger.log(`Configuration file not found at ${filePath}`);
+      Logger.log(`Configuration file not found`);
       this.settings = defaults as Configuration;
       return;
     }
@@ -59,7 +83,7 @@ export class CloudConfiguration {
   }
 
   async autoLoadModules() {
-    const tools = (this.settings.default || {}) as CommandTree;
+    const tools = (this.settings?.default || {}) as CommandTree;
     const pkg = await import(join(process.cwd(), 'package.json'), { assert: { type: 'json' } });
     const dependencies = pkg.default.dependencies || {};
     const prefix = '@cloud-cli/';
@@ -82,48 +106,22 @@ export class CloudConfiguration {
     this.importCommands(tools);
   }
 
-  private findConfigurationFile() {
-    const candidates = [
-      join(process.cwd(), 'cloudy.conf.mjs'),
-      '~/cloudy.conf.mjs',
-    ];
-
-    if (process.env.HOME) {
-      candidates.push(join(process.env.HOME, 'cloudy.conf.mjs'));
-    }
-
-    for (const filePath of candidates) {
-      if (existsSync(filePath)) {
-        return filePath;
-      }
-    }
-
-    return '';
-  }
-
   private async loadKey() {
     const keyPath = join(process.cwd(), 'key');
     if (!this.settings.key && existsSync(keyPath)) {
       this.settings.key = (await readFile(keyPath, 'utf-8')).trim();
     }
   }
+}
 
-  async loadModuleConfiguration(moduleName: string): Promise<ModuleConfiguration> {
-    const filePath = join(process.cwd(), 'configuration', `${moduleName}.json`);
+export async function getConfig(moduleName: string): Promise<ModuleConfiguration> {
+  const filePath = join(process.cwd(), 'configuration', `${moduleName}.json`);
+  const config = readJson<ModuleConfiguration>(filePath);
 
-    try {
-      if (existsSync(filePath)) {
-        const config = await readFile(filePath, 'utf-8');
-        return JSON.parse(config) as ModuleConfiguration;
-      }
-    } catch (error) {
-      Logger.log(`Invalid configuration file for ${moduleName}: ${error.message}`);
-    }
-
+  if (!config) {
+    Logger.log(`Invalid configuration file for ${moduleName} at ${filePath}`);
     return {};
   }
 
-  protected async readAndParse(filePath: string): Promise<object> {
-    return JSON.parse(String(await readFile(filePath, 'utf-8')));
-  }
+  return config;
 }
