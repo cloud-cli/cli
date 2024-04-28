@@ -1,7 +1,7 @@
-import { existsSync, mkdirSync } from 'fs';
-import { readdir, rm, writeFile } from 'fs/promises';
-import { join } from 'path';
-import { readJson } from './utils';
+import { existsSync, mkdirSync } from 'node:fs';
+import { readdir, rm, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { readJson } from './utils.js';
 
 const extension = '.json';
 
@@ -17,6 +17,13 @@ export function getStorage<T>(prefix) {
 
   const set = async (key: string, value: any): Promise<boolean> => {
     await writeFile(join(storagePath, key + extension), JSON.stringify(value), 'utf-8');
+    return true;
+  };
+
+  const update = async (key: string, values: any): Promise<boolean> => {
+    const previous = await get(key);
+    const next = Object.assign({}, previous || {}, values);
+    await writeFile(join(storagePath, key + extension), JSON.stringify(next), 'utf-8');
     return true;
   };
 
@@ -47,5 +54,5 @@ export function getStorage<T>(prefix) {
     return false;
   };
 
-  return { get, set, getKeys, getAll, remove };
+  return { get, set, update, getKeys, getAll, remove };
 }
