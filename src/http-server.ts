@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { createServer, IncomingMessage, ServerResponse, Server } from 'node:http';
 import { CloudConfiguration, getConfig } from './configuration.js';
 import { Logger } from './logger.js';
-import { init } from './constants.js';
+import { init, events } from './constants.js';
 
 export interface ServerParams {
   run(command: string, args?: any): any;
@@ -27,20 +27,33 @@ export class HttpServer {
       return;
     }
 
+    if (request.method === 'GET' && request.url === '/:log-stream') {
+      if (!this.validateKey(request, response)) {
+        return;
+      }
+
+      response.setHeader('Cache-Control', 'no-store');
+      response.setHeader('Content-Type', 'text/event-stream');
+
+      const onLog = log => {
+        response.write('event: log');
+        response.write('data: ' + log + '\n\n');
+      };
+
+      events.on('log', onLog);
+      response.on('close', () => events.off('log', onLog));
+      response.on('error', () => events.off('log', onLog));
+      return;
+    }
+
     if (request.method !== 'POST') {
       response.writeHead(405, 'Invalid method');
       response.end();
       return;
     }
 
-    const remoteKey = String(request.headers.authorization.toLowerCase()).replace('Bearer', '').trim();
-
-    if (this.config.settings.key !== remoteKey) {
-      Logger.debug('Invalid key', remoteKey, this.config.settings.key);
-      setTimeout(() => {
-        response.writeHead(404, 'Not found');
-        response.end();
-      }, 5000);
+    const validKey = this.validateKey(request, response);
+    if (!validKey) {
       return;
     }
 
@@ -70,6 +83,21 @@ export class HttpServer {
       response.write(error.message || error);
       response.end();
     }
+  }
+
+  protected validateKey(request, response) {
+    const remoteKey = String(request.headers.authorization.toLowerCase()).replace('Bearer', '').trim();
+
+    if (this.config.settings.key !== remoteKey) {
+      Logger.debug('Invalid key', remoteKey, this.config.settings.key);
+      setTimeout(() => {
+        response.writeHead(404, 'Not found');
+        response.end();
+      }, 5000);
+      return false;
+    }
+
+    return true;
   }
 
   protected runInternal(name: string, args: any) {
