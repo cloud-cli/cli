@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 
 export function readJson<T>(path: string): T | null {
   if (existsSync(path)) {
@@ -8,4 +8,8 @@ export function readJson<T>(path: string): T | null {
   }
 
   return null;
+}
+
+export function writeJson(path: string, value: any) {
+  return writeFileSync(path, JSON.stringify(value));
 }

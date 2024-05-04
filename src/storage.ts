@@ -1,58 +1,62 @@
-import { existsSync, mkdirSync } from 'node:fs';
-import { readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { readJson } from './utils.js';
+import { readJson, writeJson } from './utils.js';
+import { createHash } from 'node:crypto';
 
 const extension = '.json';
+const sha256 = (string: string) => createHash('sha256').update(string).digest('hex');
 
-export function getStorage<T>(prefix) {
-  const storagePath = join(process.cwd(), 'data', prefix);
+export function getStorage<T>(prefix: string, computeKey: (key: string) => string = sha256) {
+  const dataPath = join(process.cwd(), 'data');
+  const storagePath = join(dataPath, prefix + extension);
 
-  mkdirSync(storagePath, { recursive: true });
+  mkdirSync(dataPath, { recursive: true });
+
+  let store: Record<string, T>;
+
+  const save = () => writeJson(storagePath, store);
+  const load = () => (store = readJson(storagePath) || {});
+
+  load();
 
   const get = (key: string): T | null => {
-    const path = join(storagePath, key + extension);
-    return readJson(path);
+    load();
+    return store[computeKey(key)] || null;
   };
 
-  const set = async (key: string, value: any): Promise<boolean> => {
-    await writeFile(join(storagePath, key + extension), JSON.stringify(value), 'utf-8');
+  const has = (key: string): boolean => {
+    return computeKey(key) in store;
+  };
+
+  const set = (key: string, value: any): boolean => {
+    store[computeKey(key)] = value;
+    save();
     return true;
   };
 
-  const update = async (key: string, values: any): Promise<boolean> => {
-    const previous = await get(key);
-    const next = Object.assign({}, previous || {}, values);
-    await writeFile(join(storagePath, key + extension), JSON.stringify(next), 'utf-8');
+  const reset = (): boolean => {
+    store = {};
+    save();
     return true;
   };
 
-  const getKeys = async (): Promise<string[]> => {
-    const all = await readdir(storagePath, { withFileTypes: true });
-    return all.filter((f) => f.isFile() && f.name.endsWith(extension)).map((f) => f.name.replace(extension, ''));
+  const update = (key: string, values: Partial<T>): boolean => {
+    const previous = get(key);
+    const next = Object.assign({}, previous, values);
+    store[computeKey(key)] = next;
+    save();
+    return true;
   };
 
-  const getAll = async (): Promise<T[]> => {
-    const keys = await getKeys();
-    const all = [];
-
-    for (const next of keys) {
-      all.push(await get(next));
-    }
-
-    return all;
+  const getAll = (): T[] => {
+    return Object.values(store);
   };
 
-  const remove = async (key: string) => {
-    const path = join(storagePath, key + extension);
-
-    if (existsSync(path)) {
-      await rm(join(storagePath, key + extension));
-      return true;
-    }
-
-    return false;
+  const remove = (key: string) => {
+    delete store[computeKey(key)];
+    save();
+    return true;
   };
 
-  return { get, set, update, getKeys, getAll, remove };
+  return { get, set, reset, has, update, getAll, remove };
 }

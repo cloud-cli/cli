@@ -1,47 +1,59 @@
+import { beforeEach } from 'node:test';
+import { describe, expect, it } from 'vitest';
 import { getStorage } from '../index.js';
-import { describe, it, expect } from 'vitest';
 
 describe('store plugin data', () => {
-  const { get, set, update, remove, getAll } = getStorage('plugin');
+  beforeEach(() => getStorage('plugin').reset());
 
-  it('should read and write an item by key', async () => {
+  it('should read and write an item by key', () => {
+    const { get, set, has, remove } = getStorage('plugin');
     const expected = { name: 'abc', value: 123 };
-    await set('abc', expected);
-    const value = await get('abc');
 
-    expect(value).toEqual(expected);
+    expect(set('read-and-write', expected)).toBe(true);
+    expect(has('read-and-write')).toBe(true);
+    expect(get('read-and-write')).toEqual(expected);
+    expect(remove('read-and-write')).toBe(true);
+    expect(has('read-and-write')).toBe(false);
   });
 
-  it('should read and write an item by key', async () => {
-    await set('abc', {});
-    await remove('abc');
-    const value = await get('abc');
+  it('should remove item by key', () => {
+    const { get, set, remove } = getStorage('plugin');
+    set('remove-by-key', {});
+    remove('remove-by-key');
+
+    const value = get('remove-by-key');
 
     expect(value).toBe(null);
   });
 
-  it('should update an item by key', async () => {
-    await set('person', { name: 'joe', age: 31 });
-    await update('person', { age: 40 });
-    const value = await get('person');
-    await remove('person');
+  it('should update an item by key', () => {
+    const { get, set, update, remove } = getStorage('plugin');
+    const joe = { name: 'joe', age: 31 };
 
-    expect(value).toEqual({ name: 'joe', age: 40 });
+    set('person', joe);
+    update('person', { age: 40 });
+
+    expect(get('person')).toEqual({ name: 'joe', age: 40 });
   });
 
-  it('should read and write an item by key', async () => {
+  it('should handle multiple items', () => {
+    const { set, reset, has, remove, getAll } = getStorage('plugin');
     const one = { name: 'abc', value: 123 };
     const two = { name: 'def', value: 456 };
 
-    await set('abc', one);
-    await set('def', two);
+    reset();
+    expect(getAll()).toEqual([]);
 
-    expect(await getAll()).toEqual([one, two]);
+    set('abc', one);
+    set('def', two);
 
-    await remove('abc');
-    expect(await getAll()).toEqual([two]);
+    expect(getAll()).toEqual([one, two]);
 
-    await remove('def');
-    expect(await getAll()).toEqual([]);
+    remove('abc');
+    expect(has('abc')).toBe(false);
+    expect(getAll()).toEqual([two]);
+
+    remove('def');
+    expect(getAll()).toEqual([]);
   });
 });
