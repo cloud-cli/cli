@@ -115,8 +115,9 @@ export class CloudConfiguration {
   }
 }
 
-export async function getConfig(moduleName: string): Promise<ModuleConfiguration> {
+export async function getConfig<T extends Record<string, any>>(moduleName: string, defaults: T = null): Promise<ModuleConfiguration | T> {
   const filePath = join(process.cwd(), 'configuration', `${moduleName}.json`);
   const config = readJson<ModuleConfiguration>(filePath);
-  return config || {};
+
+  return Object.assign({}, config, defaults);
 }
