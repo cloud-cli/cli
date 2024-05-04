@@ -17,6 +17,7 @@ export type CommandTree = {
 
 export interface ModuleConfiguration {
   commands?: Record<string, object>;
+  [k: string]: any;
 }
 
 export interface Configuration {
@@ -117,11 +118,5 @@ export class CloudConfiguration {
 export async function getConfig(moduleName: string): Promise<ModuleConfiguration> {
   const filePath = join(process.cwd(), 'configuration', `${moduleName}.json`);
   const config = readJson<ModuleConfiguration>(filePath);
-
-  if (!config) {
-    Logger.log(`Invalid configuration file for ${moduleName} at ${filePath}`);
-    return {};
-  }
-
-  return config;
+  return config || {};
 }
