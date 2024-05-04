@@ -13,7 +13,7 @@ export class CliCommand {
     return this.callServer(command, jsonArgs, this.config.settings);
   }
 
-  async callServer(command: string, args: Record<string, any>, config: Configuration) {
+  async callServer(command: string, args: Record<string, any> = {}, config: Configuration) {
     const { apiPort, remoteHost, key } = config;
     const url = new URL(`${remoteHost}:${apiPort}/${command}`);
     const headers = {

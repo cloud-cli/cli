@@ -6,7 +6,7 @@ export { getConfig } from './configuration.js';
 export { getStorage } from './storage.js';
 export type { ServerParams } from './http-server.js';
 
-export async function run(command: string, args: unknown, config?: Configuration) {
+export async function run(command: string, args?: Record<string, any>, config?: Configuration) {
   if (!config) {
     const loader = new CloudConfiguration();
     await loader.loadCloudConfiguration();
