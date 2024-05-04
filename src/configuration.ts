@@ -119,5 +119,5 @@ export async function getConfig<T extends Record<string, any>>(moduleName: strin
   const filePath = join(process.cwd(), 'configuration', `${moduleName}.json`);
   const config = readJson<ModuleConfiguration>(filePath);
 
-  return Object.assign({}, config, defaults);
+  return Object.assign({}, defaults, config);
 }

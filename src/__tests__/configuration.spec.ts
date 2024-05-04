@@ -12,9 +12,9 @@ describe('configuration', () => {
     });
 
     it('should merge configurations and defaults', async () => {
-      vi.spyOn(process, 'cwd').mockImplementation(() => cwd);
-      const config = await getConfig('plugin', { foo: true });
-      expect(config).toEqual({ foo: true });
+      vi.spyOn(process, 'cwd').mockImplementation(() => cwd + '/src/__tests__');
+      const config = await getConfig('plugin', { foo: false, bar: true });
+      expect(config).toEqual({ foo: true, bar: true });
     });
 
     it('should load module configurations', async () => {
