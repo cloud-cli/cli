@@ -11,5 +11,5 @@ export function readJson<T>(path: string): T | null {
 }
 
 export function writeJson(path: string, value: any) {
-  return writeFileSync(path, JSON.stringify(value));
+  return writeFileSync(path, JSON.stringify(value, null, 2));
 }
