@@ -25,10 +25,12 @@ export function getStorage<T>(prefix: string, computeKey: (key: string) => strin
   };
 
   const has = (key: string): boolean => {
+    load();
     return computeKey(key) in store;
   };
 
   const set = (key: string, value: any): boolean => {
+    load();
     store[computeKey(key)] = value;
     save();
     return true;
@@ -41,6 +43,7 @@ export function getStorage<T>(prefix: string, computeKey: (key: string) => strin
   };
 
   const update = (key: string, values: Partial<T>): boolean => {
+    load();
     const previous = get(key);
     const next = Object.assign({}, previous, values);
     store[computeKey(key)] = next;
@@ -49,10 +52,12 @@ export function getStorage<T>(prefix: string, computeKey: (key: string) => strin
   };
 
   const getAll = (): T[] => {
+    load();
     return Object.values(store);
   };
 
   const remove = (key: string) => {
+    load();
     delete store[computeKey(key)];
     save();
     return true;
