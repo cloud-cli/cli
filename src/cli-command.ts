@@ -8,7 +8,7 @@ export class CliCommand {
 
   async run(args: string[]) {
     const [command, ...params] = args;
-    const jsonArgs = this.parseParamsFromCli(params);
+    const jsonArgs = await this.parseParamsFromCli(params);
 
     return this.callServer(command, jsonArgs, this.config.settings);
   }
@@ -40,9 +40,9 @@ export class CliCommand {
     }
   }
 
-  protected parseParamsFromCli(input: string[]) {
+  protected async parseParamsFromCli(input: string[]) {
     const { argv } = yargs(input);
-    const { $0, ...params } = argv;
+    const { $0, ...params } = await argv;
 
     this.readFileReferences(params);
 
