@@ -2,6 +2,7 @@ coverage/
 dist/**/*.spec.*
 src/
 test/
+data/
 jasmine.json
 .github
 tsconfig.json

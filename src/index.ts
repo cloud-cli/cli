@@ -6,6 +6,7 @@ export { getConfig } from './configuration.js';
 export { getStorage } from './storage.js';
 export { readJson, writeJson } from './utils.js';
 export type { ServerParams } from './http-server.js';
+export type { WithAdditionalOptions } from './types.js';
 
 export async function run(command: string, args?: Record<string, any>, config?: Configuration) {
   if (!config) {
