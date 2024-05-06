@@ -11,10 +11,13 @@ const foo = {
   },
 };
 
+const bar = {}
+
 export default {
   foo,
+  bar,
 };
 
 export const apiPort = 8888;
-export const apiHost = '127.0.0.1';
 export const remoteHost = 'http://127.0.0.1';
+export const key = 'test-key'

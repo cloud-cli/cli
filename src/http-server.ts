@@ -1,8 +1,10 @@
 import { readFile } from 'node:fs/promises';
-import { createServer, IncomingMessage, ServerResponse, Server } from 'node:http';
-import { CloudConfiguration, getConfig } from './configuration.js';
+import { IncomingMessage, Server, ServerResponse, createServer } from 'node:http';
+import { validateKey } from './authorization.js';
+import { CloudCommands } from './cloud-commands.js';
+import { Settings, getConfig } from './configuration.js';
+import { events } from './constants.js';
 import { Logger } from './logger.js';
-import { init, events } from './constants.js';
 
 export interface ServerParams {
   run(command: string, args?: any): any;
@@ -15,27 +17,27 @@ async function getClientJs(request: IncomingMessage) {
 }
 
 export class HttpServer {
-  constructor(private config: CloudConfiguration) {}
+  constructor(private commands: CloudCommands, private settings: Settings) {}
 
-  async run(request: IncomingMessage & { body?: any }, response: ServerResponse) {
-    if (request.method === 'GET' && request.url === '/index.mjs' ) {
+  async handleRequest(request: IncomingMessage & { body?: any }, response: ServerResponse) {
+    if (request.method === 'GET' && request.url === '/index.mjs') {
       response.writeHead(200, {
         'Content-Type': 'text/javascript',
-        'Access-Control-Allow-Origin': '*'
+        'Access-Control-Allow-Origin': '*',
       });
       response.end(await getClientJs(request));
       return;
     }
 
     if (request.method === 'GET' && request.url === '/:log-stream') {
-      if (!this.validateKey(request, response)) {
+      if (!validateKey(request, response, this.settings)) {
         return;
       }
 
       response.setHeader('Cache-Control', 'no-store');
       response.setHeader('Content-Type', 'text/event-stream');
 
-      const onLog = log => {
+      const onLog = (log: string) => {
         response.write('event: log');
         response.write('data: ' + log + '\n\n');
       };
@@ -52,19 +54,20 @@ export class HttpServer {
       return;
     }
 
-    const validKey = this.validateKey(request, response);
-    if (!validKey) {
+    if (!validateKey(request, response, this.settings)) {
       return;
     }
 
     const [command, functionName] = String(request.url).slice(1).split('.');
+
     if (!command && functionName === 'help') {
       this.writeAvailableCommands(response);
       return;
     }
 
-    const functionMap = this.config.commands.get(command);
+    const functionMap = this.commands.map.get(command);
     if (!this.isValidCommand(functionMap, command, functionName)) {
+      Logger.debug(`Invalid: ${command}.${functionName}`);
       response.writeHead(400, 'Bad command, function or options. Try cy .help for options');
       this.writeAvailableCommands(response);
       return;
@@ -85,24 +88,9 @@ export class HttpServer {
     }
   }
 
-  protected validateKey(request, response) {
-    const remoteKey = String(request.headers.authorization.toLowerCase()).replace('Bearer', '').trim();
-
-    if (this.config.settings.key !== remoteKey) {
-      Logger.debug('Invalid key', remoteKey, this.config.settings.key);
-      setTimeout(() => {
-        response.writeHead(404, 'Not found');
-        response.end();
-      }, 5000);
-      return false;
-    }
-
-    return true;
-  }
-
-  protected runInternal(name: string, args: any) {
+  run(name: string, args: any) {
     const [command, functionName] = name.split('.');
-    const target = this.config.commands.get(command);
+    const target = this.commands.map.get(command);
 
     if (!this.isValidCommand(target, command, functionName)) {
       throw new Error('Invalid command invoked: ' + name);
@@ -111,18 +99,29 @@ export class HttpServer {
     return this.runCommand(target, command, functionName, args);
   }
 
+  async start() {
+    const { apiHost, apiPort } = this.settings;
+    const server = createServer((request, response) => this.handleRequest(request, response));
+
+    await this.commands.initialize();
+
+    return new Promise<Server>((resolve) => {
+      server.on('listening', () => resolve(server));
+      server.listen(apiPort, apiHost);
+      Logger.log(`Started services at ${apiHost}:${apiPort}.`);
+    });
+  }
+
   private getAvailableCommands() {
     const help: Record<string, string[]> = {};
 
-    this.config.commands.forEach((object, command) => {
-      if (command === init || !(object && typeof object === 'object')) {
+    this.commands.map.forEach((object, command) => {
+      if (!(object && typeof object === 'object')) {
         return;
       }
 
-      help[command] = [];
-
       const properties = Object.getOwnPropertyNames(object);
-      const commands = properties.filter((name) => (name !== 'constructor' && typeof object[name] === 'function'));
+      const commands = properties.filter((name) => name !== 'constructor' && typeof object[name] === 'function');
 
       if (commands.length) {
         help[command] = commands;
@@ -135,19 +134,6 @@ export class HttpServer {
   private writeAvailableCommands(response: ServerResponse) {
     const help = this.getAvailableCommands();
     response.end(JSON.stringify(help, null, 2));
-  }
-
-  async serve() {
-    const { apiHost, apiPort } = this.config.settings;
-    const server = createServer((request, response) => this.run(request, response));
-
-    await this.runInitializers();
-
-    return new Promise<Server>((resolve) => {
-      server.on('listening', () => resolve(server));
-      server.listen(apiPort, apiHost);
-      Logger.log(`Started services at ${apiHost}:${apiPort}.`);
-    });
   }
 
   private parseBody(request: IncomingMessage): Promise<object> {
@@ -168,45 +154,15 @@ export class HttpServer {
     });
   }
 
-  private async runInitializers() {
-    const modules = Array.from(this.config.commands.entries());
-    for (const [command, object] of modules) {
-      if (command !== init && object && typeof object === 'object' && object[init]) {
-        Logger.log('Running initializers for ' + command);
-        const config = await getConfig(command);
-
-        try {
-          await object[init](config);
-        } catch (error) {
-          Logger.log('FAILED: ' + String(error));
-        }
-      }
-    }
-
-    const initializer = this.config.commands.get(init) as unknown as Function | undefined;
-    if (initializer) {
-      Logger.log('Running server initializer');
-      initializer(this.serverParams);
-    }
-  }
-
-  protected isValidCommand(functionMap: object | undefined, command: string, functionName: string) {
+  private isValidCommand(functionMap: object | undefined, command: string, functionName: string) {
     return functionMap && command && functionName && typeof functionMap[functionName] === 'function';
   }
 
-  protected createNext() {
-    const out: any = {};
-    out.promise = new Promise((resolve) => (out.resolve = resolve));
-
-    const next = () => out.resolve();
-    return { next, promise: out.promise };
-  }
-
-  protected serverParams: ServerParams = {
-    run: (commandName: string, args: any) => this.runInternal(commandName, args),
+  private serverParams: ServerParams = {
+    run: (commandName: string, args: any) => this.run(commandName, args),
   };
 
-  protected async runCommand(functionMap: any, command: string, functionName: string, params: any) {
+  private async runCommand(functionMap: any, command: string, functionName: string, params: any) {
     const moduleConfig = await getConfig(command);
     const optionFromFile = moduleConfig.commands?.[functionName] ?? {};
     const mergedOptions = Object.assign({}, params, optionFromFile);

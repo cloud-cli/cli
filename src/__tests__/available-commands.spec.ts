@@ -1,14 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import { CommandLineInterface } from '../clients/cli.js';
-import { CloudConfiguration, Configuration } from '../configuration.js';
+import { Settings } from '../configuration.js';
 import { HttpServer } from '../http-server.js';
 import { init } from '../index.js';
 import { Logger } from '../logger.js';
+import { CloudCommands } from '../cloud-commands.js';
 
 describe('list available commands', () => {
   let port = 1234;
+
   it('runs print a help text and exit when "--help" is given as the only argument', async () => {
-    const settings: Configuration = {
+    const settings: Settings = {
       key: 'key',
       default: {
         [init]() {},
@@ -17,22 +19,19 @@ describe('list available commands', () => {
           one() {},
           two() {},
         },
-      } ,
+      },
       apiHost: 'localhost',
       apiPort: port++,
       remoteHost: 'http://localhost',
     };
 
-    const config = new CloudConfiguration();
-    config.settings = settings;
-    config.importCommands(settings.default);
-    vi.spyOn(config, 'loadCloudConfiguration').mockImplementation(async () => {});
+    const commands = await CloudCommands.load(settings);
 
     vi.spyOn(Logger, 'log').mockReturnValue(void 0);
     vi.spyOn(process, 'exit').mockReturnValue(0 as never);
 
-    const cli = new CommandLineInterface(config);
-    const server = await new HttpServer(config).serve();
+    const cli = new CommandLineInterface(settings);
+    const server = await new HttpServer(commands, settings).start();
     await cli.run(['--help']);
     server.close();
 
@@ -45,8 +44,8 @@ describe('list available commands', () => {
   });
 
   it('should show a text when no command is available', async () => {
-    const config = new CloudConfiguration();
-    config.settings = {
+    const commands = await CloudCommands.load();
+    const settings = {
       key: 'key',
       default: {} as any,
       apiHost: 'localhost',
@@ -54,12 +53,11 @@ describe('list available commands', () => {
       remoteHost: 'http://localhost',
     };
 
-    vi.spyOn(config, 'loadCloudConfiguration').mockImplementation(async () => {});
     vi.spyOn(Logger, 'log').mockReturnValue(void 0);
     vi.spyOn(process, 'exit').mockReturnValue(0 as never);
 
-    const cli = new CommandLineInterface(config);
-    const server = await new HttpServer(config).serve();
+    const cli = new CommandLineInterface(settings);
+    const server = await new HttpServer(commands, settings).start();
     await cli.run(['--help']);
     server.close();
 

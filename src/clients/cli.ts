@@ -1,26 +1,22 @@
-import { CloudConfiguration } from '../configuration.js';
-import { CliCommand } from '../cli-command.js';
-import { HttpServer } from '../http-server.js';
+import { readFileSync } from 'node:fs';
+import yargs from 'yargs';
+import { callServer } from '../call-server.js';
+import { Settings } from '../configuration.js';
 import { Logger } from '../logger.js';
 
 export class CommandLineInterface {
-  protected http: HttpServer;
-  protected cli: CliCommand;
-
-  constructor(protected config = new CloudConfiguration()) {
-    this.cli = new CliCommand(config);
-  }
+  constructor(protected settings: Settings) {}
 
   async run(args: string[]) {
-    await this.config.loadCloudConfiguration();
-
     if (!args.length || args[0] === '--help') {
       await this.showHelpAndExit();
       return;
     }
 
     try {
-      const output = await this.cli.run(args);
+      const [command, ...params] = args;
+      const jsonArgs = await this.parseParamsFromCli(params);
+      const output = await callServer(command, jsonArgs, this.settings);
       this.printOutput(output);
       return output;
     } catch (error) {
@@ -63,15 +59,37 @@ export class CommandLineInterface {
   }
 
   async fetchCommands() {
-    const { apiPort, remoteHost, key } = this.config.settings;
-    const url = new URL(`${remoteHost}:${apiPort}/`);
+    const { apiPort, remoteHost, key } = this.settings;
+    const url = new URL(`${remoteHost}:${apiPort}/.help`);
     const headers = { authorization: key };
     const remote = await fetch(url, { method: 'POST', headers });
 
     if (!remote.ok) {
       console.debug(`Fetch command returned ${remote.status}: ${remote.statusText}`);
+      return {};
     }
 
     return (await remote.json()) as Record<string, string[]>;
+  }
+
+  private async parseParamsFromCli(input: string[]) {
+    const { argv } = yargs(input);
+    const { $0, ...params } = await argv;
+
+    this.readFileReferences(params);
+
+    return params;
+  }
+
+  private readFileReferences(params: Record<string, unknown>) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (typeof value === 'object') {
+        return this.readFileReferences(value as any);
+      }
+
+      if (String(value).startsWith('@file:')) {
+        params[key] = readFileSync(String(value).slice(6), { encoding: 'utf-8' });
+      }
+    });
   }
 }
