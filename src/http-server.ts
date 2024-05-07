@@ -163,7 +163,7 @@ export class HttpServer {
   };
 
   private async runCommand(functionMap: any, command: string, functionName: string, params: any) {
-    const moduleConfig = await getConfig(command);
+    const moduleConfig = getConfig(command);
     const optionFromFile = moduleConfig.commands?.[functionName] ?? {};
     const mergedOptions = Object.assign({}, params, optionFromFile);
 

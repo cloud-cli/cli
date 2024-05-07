@@ -67,12 +67,9 @@ export function findFile(): string {
   return '';
 }
 
-export async function getConfig<T extends Record<string, any>>(
-  moduleName: string,
-  defaults: T = null,
-): Promise<ModuleConfiguration | T> {
+export function getConfig<T extends ModuleConfiguration>(moduleName: string, defaults: T = null): T {
   const filePath = join(process.cwd(), 'configuration', `${moduleName}.json`);
-  const config = readJson<ModuleConfiguration>(filePath);
+  const config = readJson<T>(filePath);
 
   return Object.assign({}, defaults, config);
 }
