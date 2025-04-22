@@ -36,7 +36,7 @@ export class CloudCommands {
 
   static async load(settings?: Settings) {
     const tools = (settings?.default || {}) as CommandTree;
-    const pkg = await import(join(process.cwd(), 'package.json'), { assert: { type: 'json' } });
+    const pkg = await import(join(process.cwd(), 'package.json'), { with: { type: 'json' } });
     const dependencies = pkg.default.dependencies || {};
     const prefix = '@cloud-cli/';
     const modules = Object.keys(dependencies).filter((k) => k.startsWith(prefix));

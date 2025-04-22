@@ -10,8 +10,9 @@ async function serve() {
     const settings = await getCloudyConfig();
     const commands = await CloudCommands.load(settings);
     const http = new HttpServer(commands, settings);
-    await http.start();
+    return await http.start();
   } catch (error) {
+    console.error(error);
     process.exit(1);
   }
 }
@@ -19,7 +20,7 @@ async function serve() {
 const args = process.argv.slice(2);
 
 if (args[0] == '--serve') {
-  serve();
+  await serve();
 } else {
   const settings = await getCloudyConfig();
   const cli = new CommandLineInterface(settings);
