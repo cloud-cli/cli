@@ -5,7 +5,7 @@ import { Logger } from './logger.js';
 import type { Settings } from './configuration.js';
 
 export function validateKey(request, response, settings: Settings) {
-  const remoteKey = String(request.headers.authorization.toLowerCase()).replace('bearer', '').trim();
+  const remoteKey = String(request.headers.authorization?.toLowerCase() || '').replace('bearer', '').trim();
 
   if (settings.key !== remoteKey) {
     Logger.debug(`Invalid key: ${remoteKey}, expected ${settings.key}`);
