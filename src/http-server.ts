@@ -17,7 +17,10 @@ async function getClientJs(request: IncomingMessage) {
 }
 
 export class HttpServer {
-  constructor(private commands: CloudCommands, private settings: Settings) {}
+  constructor(
+    private commands: CloudCommands,
+    private settings: Settings,
+  ) {}
 
   async handleRequest(request: IncomingMessage & { body?: any }, response: ServerResponse) {
     if (request.method === 'GET' && request.url === '/index.mjs') {

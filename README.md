@@ -15,9 +15,9 @@ export default {
   greeting: {
     sayHi() {
       return 'Hello!';
-    }
-  }
-}
+    },
+  },
+};
 ```
 
 And here's what the CLI can do:
@@ -100,3 +100,12 @@ Now you can run `npx @cloud-cli/cli --help` to get a list of commands available.
 - The same commands can be executed with `cy` inside the server and in your local machine.
 
 - And if you need to un the same but from a browser, the entire CLI is also an API
+
+## Environment variables
+
+| Env                | Description                                      | Default              |
+| ------------------ | ------------------------------------------------ | -------------------- |
+| CLOUDY_PORT        | HTTP server port                                 | `1234`               |
+| CLOUDY_HOST        | HTTP host for incoming requests                  | `'127.0.0.1'`        |
+| CLOUDY_REMOTE_HOST | HTTP server address (for CLI)                    | `'http://127.0.0.1'` |
+| CLOUDY_TOKEN       | Authorization token (for both client and server) | `''`                 |

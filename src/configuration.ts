@@ -19,11 +19,13 @@ export interface Settings {
   invalidKeyPenalty?: number;
 }
 
+const _ = process.env;
+
 const defaults: Settings = {
-  apiPort: 1234,
-  apiHost: '127.0.0.1',
-  remoteHost: 'http://127.0.0.1',
-  key: '',
+  apiPort: Number(_.CLOUDY_PORT || 1234),
+  apiHost: _.CLOUDY_HOST || '127.0.0.1',
+  remoteHost: _.CLOUDY_REMOTE_HOST || 'http://127.0.0.1',
+  key: _.CLOUDY_TOKEN || '',
   invalidKeyPenalty: 5000,
 };
 

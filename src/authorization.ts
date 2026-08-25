@@ -5,7 +5,9 @@ import { Logger } from './logger.js';
 import type { Settings } from './configuration.js';
 
 export function validateKey(request, response, settings: Settings) {
-  const remoteKey = String(request.headers.authorization?.toLowerCase() || '').replace('bearer', '').trim();
+  const remoteKey = String(request.headers.authorization || '')
+    .replace(/^[bB]earer\s+/, '')
+    .trim();
 
   if (settings.key !== remoteKey) {
     Logger.debug(`Invalid key: ${remoteKey}, expected ${settings.key}`);
@@ -22,7 +24,10 @@ export function validateKey(request, response, settings: Settings) {
 
 export async function loadKey() {
   const keyPath = join(process.cwd(), 'key');
+
   if (existsSync(keyPath)) {
     return (await readFile(keyPath, 'utf-8')).trim();
   }
+
+  return '';
 }
