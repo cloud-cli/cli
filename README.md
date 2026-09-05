@@ -103,9 +103,10 @@ Now you can run `npx @cloud-cli/cli --help` to get a list of commands available.
 
 ## Environment variables
 
-| Env                | Description                                      | Default              |
-| ------------------ | ------------------------------------------------ | -------------------- |
-| CLOUDY_PORT        | HTTP server port                                 | `1234`               |
-| CLOUDY_HOST        | HTTP host for incoming requests                  | `'127.0.0.1'`        |
-| CLOUDY_REMOTE_HOST | HTTP server address (for CLI)                    | `'http://127.0.0.1'` |
-| CLOUDY_TOKEN       | Authorization token (for both client and server) | `''`                 |
+| Env                | Description                                       | Default              |
+| ------------------ | ------------------------------------------------- | -------------------- |
+| CLOUDY_PORT        | HTTP server port                                  | `1234`               |
+| CLOUDY_HOST        | HTTP host for incoming requests                   | `'127.0.0.1'`        |
+| CLOUDY_REMOTE_HOST | HTTP server address (where CLI calls the APIs)    | `'http://127.0.0.1'` |
+| CLOUDY_TOKEN       | Authorization token (shared by client and server) |                      |
+| CLOUDY_CONFIG      | Override path to `cloudy.config.mjs`              |                      |

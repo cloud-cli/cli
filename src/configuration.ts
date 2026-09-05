@@ -30,7 +30,7 @@ const defaults: Settings = {
 };
 
 export async function getCloudyConfig(filePath?: string): Promise<Settings> {
-  filePath ||= findFile();
+  filePath ||= findConfigFile();
 
   if (!filePath) {
     throw new Error('Configuration file not found');
@@ -53,15 +53,12 @@ export async function getCloudyConfig(filePath?: string): Promise<Settings> {
   }
 }
 
-export function findFile(): string {
-  const candidates = [join(process.cwd(), 'cloudy.conf.mjs'), '~/cloudy.conf.mjs'];
-
-  if (process.env.HOME) {
-    candidates.push(join(process.env.HOME, 'cloudy.conf.mjs'));
-  }
+export function findConfigFile(): string {
+  const file = 'cloudy.conf.mjs';
+  const candidates = [process.env.CLOUDY_CONFIG, join(process.cwd(), file), join(process.env.HOME || '~', file)];
 
   for (const filePath of candidates) {
-    if (existsSync(filePath)) {
+    if (filePath && existsSync(filePath)) {
       return filePath;
     }
   }
