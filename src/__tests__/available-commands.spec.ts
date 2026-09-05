@@ -5,10 +5,9 @@ import { HttpServer } from '../http-server.js';
 import { init } from '../index.js';
 import { Logger } from '../logger.js';
 import { CloudCommands } from '../cloud-commands.js';
+import { randomPort } from './random-port.js';
 
 describe('list available commands', () => {
-  let port = 1234;
-
   it('runs print a help text and exit when "--help" is given as the only argument', async () => {
     const settings: Settings = {
       key: 'key',
@@ -21,7 +20,7 @@ describe('list available commands', () => {
         },
       },
       apiHost: 'localhost',
-      apiPort: port++,
+      apiPort: await randomPort(),
       remoteHost: 'http://localhost',
     };
 
@@ -49,7 +48,7 @@ describe('list available commands', () => {
       key: 'key',
       default: {} as any,
       apiHost: 'localhost',
-      apiPort: 2999,
+      apiPort: await randomPort(),
       remoteHost: 'http://localhost',
     };
 

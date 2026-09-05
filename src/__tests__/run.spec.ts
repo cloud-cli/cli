@@ -1,10 +1,10 @@
-import { createServer } from 'http';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { Configuration } from '../configuration.js';
+import { Configuration, getCloudyConfig } from '../configuration.js';
 import { run } from '../index.js';
 
 describe('CLI as a module', () => {
-  const port = 3000;
   let server;
   let receivedCalls: any[] = [];
 
@@ -12,11 +12,11 @@ describe('CLI as a module', () => {
     key: 'key',
     default: {} as any,
     apiHost: 'localhost',
-    apiPort: port,
+    apiPort: 0,
     remoteHost: 'http://localhost',
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     receivedCalls = [];
     server = createServer((req, res) => {
       if (req.url === '/command.fail') {
@@ -32,10 +32,13 @@ describe('CLI as a module', () => {
       });
       res.end('{}');
     });
-    server.listen(port);
+    await new Promise<void>((resolve) => server.listen(0, 'localhost', resolve));
+    config.apiPort = (server.address() as AddressInfo).port;
   });
 
-  afterEach(() => server.close());
+  afterEach(() => {
+    if (server.listening) server.close();
+  });
 
   it('should call a remote server', async () => {
     await expect(run('command.name', { foo: true }, config)).resolves.toEqual({});
@@ -52,21 +55,28 @@ describe('CLI as a module', () => {
   });
 
   it('should catch connnection errors', async () => {
-    await expect(run('command.fail', {}, { ...config, apiPort: 12345 })).rejects.toEqual(
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    await expect(run('command.fail', {}, config)).rejects.toEqual(
       new Error('Failed to connect to server'),
     );
   });
 
   it('should read authorization key from a file', async () => {
     process.env.HOME = process.cwd() + '/src/__tests__/withoutKey';
-    await expect(run('command.keyFromFile', {})).resolves.toEqual({});
+    const settings = await getCloudyConfig();
+    settings.apiHost = config.apiHost;
+    settings.apiPort = config.apiPort;
+    await expect(run('command.keyFromFile', {}, settings)).resolves.toEqual({});
     const [request] = receivedCalls[0];
     expect(request.headers.authorization).toBe('test-key');
   });
 
   it('should read configuration from a file', async () => {
     process.env.HOME = process.cwd() + '/src/__tests__/withKey';
-    await expect(run('command.keyFromFile', {})).resolves.toEqual({});
+    const settings = await getCloudyConfig();
+    settings.apiHost = config.apiHost;
+    settings.apiPort = config.apiPort;
+    await expect(run('command.keyFromFile', {}, settings)).resolves.toEqual({});
     const [request] = receivedCalls[0];
     expect(request.headers.authorization).toBe('testKeyFromFile');
   });

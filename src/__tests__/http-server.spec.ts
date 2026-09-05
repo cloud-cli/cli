@@ -5,10 +5,9 @@ import { init } from '../index.js';
 import { Logger } from '../logger.js';
 import type { Settings } from '../configuration.js';
 import { CloudCommands } from '../cloud-commands.js';
+import { randomPort } from './random-port.js';
 
 describe('http server', () => {
-  let port = 3001;
-
   async function setup() {
     const settings: Settings = {
       key: 'key',
@@ -21,7 +20,7 @@ describe('http server', () => {
         },
       },
       apiHost: 'localhost',
-      apiPort: port++,
+      apiPort: await randomPort(),
       remoteHost: 'http://localhost',
     };
 
