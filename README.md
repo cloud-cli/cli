@@ -4,10 +4,6 @@
 
 Cloudy is a both an HTTP server and a CLI tool, used to run commands on a remote machine using plugins.
 
-So what?
-
-Well, not any commands... You write a script that exports a few functions in an object and Cloudy takes care of exposing it as an API.
-
 Here's an example:
 
 ```js
