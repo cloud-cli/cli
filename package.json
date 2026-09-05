@@ -13,11 +13,10 @@
     "test": "npm run tdd -- --watch=false",
     "tdd": "vitest --coverage.enabled --coverage.skipFull",
     "build": "rm -rf ./dist/* && npm run tsc && chmod +x dist/run.js",
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "self-test": "npm ci && npm run build && sh self-test.sh"
   },
-  "keywords": [
-    "cloudy"
-  ],
+  "keywords": ["cloudy"],
   "repository": {
     "type": "git",
     "url": "https://github.com/cloud-cli/cli"
