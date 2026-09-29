@@ -64,3 +64,135 @@ describe('list available commands', () => {
     expect(process.exit).toHaveBeenCalledWith(1);
   });
 });
+
+describe('CLI help fetch behavior', () => {
+  async function setupHelpTests(): Promise<{
+    settings: Settings;
+    commands: ReturnType<typeof CloudCommands.load>;
+    cli: CommandLineInterface;
+    server: import('node:http').Server;
+  }> {
+    const settings: Settings = {
+      key: 'key',
+      default: {
+        foo: {
+          calledFromTests: vi.fn((args, { run }) => run('foo.calledInternally', args)),
+          calledInternally: vi.fn(() => 'I was called internally'),
+          help: vi.fn().mockResolvedValue('Help text for foo module.'),
+        },
+      },
+      apiHost: 'localhost',
+      apiPort: await randomPort(),
+      remoteHost: 'http://localhost',
+    };
+
+    const commands = await CloudCommands.load(settings);
+
+    vi.spyOn(Logger, 'log').mockReturnValue(void 0);
+    vi.spyOn(process, 'exit').mockReturnValue(0 as never);
+
+    const cli = new CommandLineInterface(settings);
+    const server = await new HttpServer(commands, settings).start();
+
+    return { settings, commands, cli, server };
+  }
+
+  it('displays help string when cy <module> --help is used', async () => {
+    const { settings, commands, cli, server } = await setupHelpTests();
+
+    const output = await cli.fetchModuleHelp('foo');
+    expect(output).toBe('Help text for foo module.');
+
+    server.close();
+  });
+
+  it('returns undefined when module help is not found', async () => {
+    const { settings, commands, cli, server } = await setupHelpTests();
+
+    // Test with a module that has no help function
+    const output = await cli.fetchModuleHelp('nonexistent');
+    expect(output).toBeUndefined();
+
+    server.close();
+  });
+
+  it('handles malformed JSON response gracefully', async () => {
+    const { settings, commands, cli, server } = await setupHelpTests();
+
+    // Mock the fetch to return malformed JSON
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => {
+        throw new Error('Invalid JSON');
+      },
+    } as Response);
+
+    const output = await cli.fetchModuleHelp('foo');
+    expect(output).toBeUndefined();
+
+    globalThis.fetch = originalFetch;
+    server.close();
+  });
+
+  it('handles non-OK response gracefully', async () => {
+    const { settings, commands, cli, server } = await setupHelpTests();
+
+    // Mock the fetch to return a 404
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+    } as Response);
+
+    const output = await cli.fetchModuleHelp('nonexistent-module');
+    expect(output).toBeUndefined();
+
+    globalThis.fetch = originalFetch;
+    server.close();
+  });
+
+  it('returns help string when cy <module> --help is used', async () => {
+    const { settings, commands, cli, server } = await setupHelpTests();
+
+    const output = await cli.fetchModuleHelp('foo');
+    expect(output).toBe('Help text for foo module.');
+
+    server.close();
+  });
+
+  it('falls back to function list when module has no help() symbol', async () => {
+    const settings: Settings = {
+      key: 'key',
+      default: {
+        foo: {
+          [init]() {},
+          one() {},
+          two() {},
+          // no help symbol
+        },
+      },
+      apiHost: 'localhost',
+      apiPort: await randomPort(),
+      remoteHost: 'http://localhost',
+    };
+
+    const commands = await CloudCommands.load(settings);
+
+    vi.spyOn(Logger, 'log').mockReturnValue(void 0);
+    vi.spyOn(process, 'exit').mockReturnValue(0 as never);
+
+    const cli = new CommandLineInterface(settings);
+    const server = await new HttpServer(commands, settings).start();
+
+    // When no help symbol, should get function list as help text
+    const output = await cli.fetchModuleHelp('foo');
+    // The help text should be the function list fallback
+    expect(typeof output).toBe('string');
+    expect(output).toContain('one');
+    expect(output).toContain('two');
+
+    server.close();
+  });
+});
