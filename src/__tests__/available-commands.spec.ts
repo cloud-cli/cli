@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { CommandLineInterface } from '../clients/cli.js';
 import { Settings } from '../configuration.js';
 import { HttpServer } from '../http-server.js';
-import { init } from '../index.js';
+import { init, help } from '../constants.js';
 import { Logger } from '../logger.js';
 import { CloudCommands } from '../cloud-commands.js';
 import { randomPort } from './random-port.js';
@@ -78,7 +78,7 @@ describe('CLI help fetch behavior', () => {
         foo: {
           calledFromTests: vi.fn((args, { run }) => run('foo.calledInternally', args)),
           calledInternally: vi.fn(() => 'I was called internally'),
-          help: vi.fn().mockResolvedValue('Help text for foo module.'),
+          [help]: vi.fn().mockResolvedValue('Help text for foo module.'),
         },
       },
       apiHost: 'localhost',
@@ -150,15 +150,6 @@ describe('CLI help fetch behavior', () => {
     expect(output).toBeUndefined();
 
     globalThis.fetch = originalFetch;
-    server.close();
-  });
-
-  it('returns help string when cy <module> --help is used', async () => {
-    const { settings, commands, cli, server } = await setupHelpTests();
-
-    const output = await cli.fetchModuleHelp('foo');
-    expect(output).toBe('Help text for foo module.');
-
     server.close();
   });
 

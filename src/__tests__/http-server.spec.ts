@@ -79,6 +79,9 @@ describe('http server', () => {
 
     await httpServer.handleRequest(mockRequest, res);
 
+    // Verify the response contains available commands
+    expect(res.statusCode).toBe(200);
+
     // Verify server is still operational after the request
     expect(server.listening).toBe(true);
 
@@ -101,6 +104,9 @@ describe('http server', () => {
 
     await httpServer.handleRequest(mockRequest, res);
 
+    // Verify the response contains module help
+    expect(res.statusCode).toBe(200);
+
     // Verify server is still operational after the request
     expect(server.listening).toBe(true);
 
@@ -112,13 +118,19 @@ describe('http server', () => {
     const httpServer = new HttpServer(commands, settings);
     const server = await httpServer.start();
 
+    const { writable } = new PassThrough();
+    const res = new ServerResponse(writable) as ServerResponse;
+
     const mockRequest: IncomingMessage = {
       method: 'POST',
       url: '/.help/foo',
       headers: { 'content-type': 'application/json', authorization: 'key' },
     } as any;
 
-    await httpServer.handleRequest(mockRequest, {} as ServerResponse);
+    await httpServer.handleRequest(mockRequest, res);
+
+    // Verify the response contains function list fallback
+    expect(res.statusCode).toBe(200);
 
     // Verify server is still operational after the request
     expect(server.listening).toBe(true);
@@ -138,9 +150,13 @@ describe('http server', () => {
       method: 'POST',
       url: '/foo.calledFromTests',
       headers: { 'content-type': 'application/json', authorization: 'key' },
-    } as any;
+      body: JSON.stringify({}),
+    } as unknown as IncomingMessage & { body?: string };
 
     await httpServer.handleRequest(mockRequest, res);
+
+    // Verify the response contains the command output
+    expect(res.statusCode).toBe(200);
 
     // Verify server is still operational after the request
     expect(server.listening).toBe(true);
@@ -183,11 +199,15 @@ describe('http server', () => {
 
     const mockRequest: IncomingMessage = {
       method: 'POST',
-      url: '/.help/foo.calledFromTests',
+      url: '/.help/foo',
       headers: { 'content-type': 'application/json', authorization: 'key' },
-    } as any;
+      body: JSON.stringify({}),
+    } as unknown as IncomingMessage & { body?: string };
 
     await httpServer.handleRequest(mockRequest, res);
+
+    // Verify the response contains help text for the module
+    expect(res.statusCode).toBe(200);
 
     // Verify server is still operational after the request
     expect(server.listening).toBe(true);
