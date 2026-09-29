@@ -1,15 +1,26 @@
-import { readFileSync } from 'node:fs';
-import yargs from 'yargs';
-import { callServer } from '../call-server.js';
-import { Settings } from '../configuration.js';
-import { Logger } from '../logger.js';
+import { readFileSync } from "node:fs";
+import yargs from "yargs";
+import { callServer } from "../call-server.js";
+import { Settings } from "../configuration.js";
+import { Logger } from "../logger.js";
 
 export class CommandLineInterface {
   constructor(protected settings: Settings) {}
 
   async run(args: string[]) {
-    if (!args.length || args[0] === '--help') {
+    if (!args.length || args[0] === "--help") {
       await this.showHelpAndExit();
+      return;
+    }
+
+    // Check if --help follows a command name (e.g., "cy <name> --help")
+    const helpArgIndex = args.indexOf("--help");
+    if (helpArgIndex > 0 && helpArgIndex === args.length - 1) {
+      const command = args[helpArgIndex - 1];
+      const output = await this.fetchModuleHelp(command);
+      if (output !== undefined) {
+        this.printOutput(output);
+      }
       return;
     }
 
@@ -27,7 +38,7 @@ export class CommandLineInterface {
   printOutput(output: any) {
     if (output === undefined) return;
 
-    if (typeof output === 'object' && output) {
+    if (typeof output === "object" && output) {
       output = JSON.stringify(output, null, 2);
     }
 
@@ -39,16 +50,16 @@ export class CommandLineInterface {
     const entries = Object.entries(commands);
 
     if (!(commands && entries.length)) {
-      Logger.log('No commands available.');
+      Logger.log("No commands available.");
       process.exit(1);
     }
 
-    Logger.log('Usage: cy <command>.<subcommand> --option=value\nAvailable commands:\n');
+    Logger.log("Usage: cy <command>.<subcommand> --option=value\nAvailable commands:\n");
 
     entries.forEach((entry) => {
       const [command, subcommands] = entry;
       Logger.log(command);
-      subcommands.forEach((name) => Logger.log('  ', name));
+      subcommands.forEach((name) => Logger.log("  ", name));
     });
 
     if (entries.length) {
@@ -62,7 +73,7 @@ export class CommandLineInterface {
     const { apiPort, remoteHost, key } = this.settings;
     const url = new URL(`${remoteHost}:${apiPort}/.help`);
     const headers = { authorization: key };
-    const remote = await fetch(url, { method: 'POST', headers });
+    const remote = await fetch(url, { method: "POST", headers });
 
     if (!remote.ok) {
       console.debug(`Fetch command returned ${remote.status}: ${remote.statusText}`);
@@ -70,6 +81,20 @@ export class CommandLineInterface {
     }
 
     return (await remote.json()) as Record<string, string[]>;
+  }
+
+  async fetchModuleHelp(command: string) {
+    const { apiPort, remoteHost, key } = this.settings;
+    const url = new URL(`${remoteHost}:${apiPort}/.help/${command}`);
+    const headers = { authorization: key };
+    const remote = await fetch(url, { method: "POST", headers });
+
+    if (!remote.ok) {
+      console.debug(`Fetch module help returned ${remote.status}: ${remote.statusText}`);
+      return undefined;
+    }
+
+    return remote.json();
   }
 
   private async parseParamsFromCli(input: string[]) {
@@ -83,12 +108,12 @@ export class CommandLineInterface {
 
   private readFileReferences(params: Record<string, unknown>) {
     Object.entries(params).forEach(([key, value]) => {
-      if (typeof value === 'object') {
+      if (typeof value === "object") {
         return this.readFileReferences(value as any);
       }
 
-      if (String(value).startsWith('@file:')) {
-        params[key] = readFileSync(String(value).slice(6), { encoding: 'utf-8' });
+      if (String(value).startsWith("@file:")) {
+        params[key] = readFileSync(String(value).slice(6), { encoding: "utf-8" });
       }
     });
   }
