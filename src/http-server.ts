@@ -61,17 +61,23 @@ export class HttpServer {
       return;
     }
 
-    const [command, functionName] = String(request.url).slice(1).split(".");
+    const url = new URL(request.url!, "http://localhost");
+    const pathname = url.pathname;
 
-    if (!command && functionName === "help") {
+    // Help endpoints – parsed explicitly from the URL pathname
+    if (pathname === "/.help") {
       this.writeAvailableCommands(response);
       return;
     }
 
-    if (command && functionName === "help") {
-      this.writeModuleHelp(response, command);
+    if (pathname.startsWith("/.help/")) {
+      const moduleName = pathname.slice("/.help/".length);
+      this.writeModuleHelp(response, moduleName);
       return;
     }
+
+    // Regular command routing: strip leading '/' and split on '.'
+    const [command, functionName] = pathname.slice(1).split(".") || [];
 
     const functionMap = this.commands.map.get(command);
     if (!this.isValidCommand(functionMap, command, functionName)) {
