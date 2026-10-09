@@ -162,7 +162,7 @@ export class HttpServer {
     const helpFunc = functionMap[help];
     if (typeof helpFunc === 'function') {
       try {
-        const helpText = await helpFunc({}, this.serverParams);
+        const helpText = await helpFunc();
         const body = {
           command,
           help: helpText || 'No help available for this module.',

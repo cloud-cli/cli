@@ -19,9 +19,9 @@ describe('list available commands', () => {
           two() {},
         },
       },
-      apiHost: 'localhost',
+      apiHost: '127.0.0.1',
       apiPort: await randomPort(),
-      remoteHost: 'http://localhost',
+      remoteHost: 'http://127.0.0.1',
     };
 
     const commands = await CloudCommands.load(settings);
@@ -47,9 +47,9 @@ describe('list available commands', () => {
     const settings = {
       key: 'key',
       default: {} as any,
-      apiHost: 'localhost',
+      apiHost: '127.0.0.1',
       apiPort: await randomPort(),
-      remoteHost: 'http://localhost',
+      remoteHost: 'http://127.0.0.1',
     };
 
     vi.spyOn(Logger, 'log').mockReturnValue(void 0);
@@ -71,19 +71,21 @@ describe('CLI help fetch behavior', () => {
     commands: ReturnType<typeof CloudCommands.load>;
     cli: CommandLineInterface;
     server: import('node:http').Server;
+    helpFunction: ReturnType<typeof vi.fn>;
   }> {
+    const helpFunction = vi.fn().mockResolvedValue('Help text for foo module.');
     const settings: Settings = {
       key: 'key',
       default: {
         foo: {
           calledFromTests: vi.fn((args, { run }) => run('foo.calledInternally', args)),
           calledInternally: vi.fn(() => 'I was called internally'),
-          [help]: vi.fn().mockResolvedValue('Help text for foo module.'),
+          [help]: helpFunction,
         },
       },
-      apiHost: 'localhost',
+      apiHost: '127.0.0.1',
       apiPort: await randomPort(),
-      remoteHost: 'http://localhost',
+      remoteHost: 'http://127.0.0.1',
     };
 
     const commands = await CloudCommands.load(settings);
@@ -94,14 +96,17 @@ describe('CLI help fetch behavior', () => {
     const cli = new CommandLineInterface(settings);
     const server = await new HttpServer(commands, settings).start();
 
-    return { settings, commands, cli, server };
+    return { settings, commands, cli, server, helpFunction };
   }
 
-  it('displays help string when cy <module> --help is used', async () => {
-    const { settings, commands, cli, server } = await setupHelpTests();
+  it('displays module help when cy <module> --help is used', async () => {
+    const { cli, server, helpFunction } = await setupHelpTests();
 
-    const output = await cli.fetchModuleHelp('foo');
-    expect(output).toBe('Help text for foo module.');
+    const output = vi.spyOn(cli, 'printOutput');
+    await cli.run(['foo', '--help']);
+    expect(output).toHaveBeenCalledWith('Help text for foo module.');
+    expect(helpFunction).toHaveBeenCalledOnce();
+    expect(helpFunction).toHaveBeenCalledWith();
 
     server.close();
   });
@@ -164,9 +169,9 @@ describe('CLI help fetch behavior', () => {
           // no help symbol
         },
       },
-      apiHost: 'localhost',
+      apiHost: '127.0.0.1',
       apiPort: await randomPort(),
-      remoteHost: 'http://localhost',
+      remoteHost: 'http://127.0.0.1',
     };
 
     const commands = await CloudCommands.load(settings);

@@ -11,9 +11,9 @@ describe('CLI as a module', () => {
   const config: Configuration = {
     key: 'key',
     default: {} as any,
-    apiHost: 'localhost',
+    apiHost: '127.0.0.1',
     apiPort: 0,
-    remoteHost: 'http://localhost',
+    remoteHost: 'http://127.0.0.1',
   };
 
   beforeEach(async () => {
@@ -32,12 +32,14 @@ describe('CLI as a module', () => {
       });
       res.end('{}');
     });
-    await new Promise<void>((resolve) => server.listen(0, 'localhost', resolve));
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
     config.apiPort = (server.address() as AddressInfo).port;
   });
 
   afterEach(() => {
-    if (server.listening) server.close();
+    if (server.listening) {
+      server.close();
+    }
   });
 
   it('should call a remote server', async () => {
@@ -56,9 +58,7 @@ describe('CLI as a module', () => {
 
   it('should catch connnection errors', async () => {
     await new Promise<void>((resolve) => server.close(() => resolve()));
-    await expect(run('command.fail', {}, config)).rejects.toEqual(
-      new Error('Failed to connect to server'),
-    );
+    await expect(run('command.fail', {}, config)).rejects.toEqual(new Error('Failed to connect to server'));
   });
 
   it('should read authorization key from a file', async () => {

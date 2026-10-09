@@ -7,4 +7,5 @@ jasmine.json
 .github
 tsconfig.json
 jest.config.*
+todo.md
 key

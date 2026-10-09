@@ -21,9 +21,9 @@ describe('http server', () => {
           calledInternally: vi.fn(() => 'I was called internally'),
         },
       },
-      apiHost: 'localhost',
+      apiHost: '127.0.0.1',
       apiPort: await randomPort(),
-      remoteHost: 'http://localhost',
+      remoteHost: 'http://127.0.0.1',
     };
 
     const commands = await CloudCommands.load(settings);
@@ -56,7 +56,7 @@ describe('http server', () => {
 
     expect(Logger.log).toHaveBeenCalledWith('Running initializers for foo');
     expect(Logger.log).toHaveBeenCalledWith('Running initializers for root');
-    expect(Logger.log).toHaveBeenCalledWith('Started services at localhost:' + settings.apiPort + '.');
+    expect(Logger.log).toHaveBeenCalledWith('Started services at 127.0.0.1:' + settings.apiPort + '.');
 
     expect(settings.default![init]).toHaveBeenCalled();
   });
